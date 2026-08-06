@@ -630,6 +630,22 @@ function handleMockAISymptoms(res: Response, chatHistory: any[], msg: string, la
   }
 
   // Return assessment default English
+  if (historyLen < 2) {
+    return res.json({
+      emergency: false,
+      needsMoreInfo: true,
+      question: "I understand. Could you tell me how severe your discomfort is on a scale of 1 to 10, and when did it start?",
+      options: ["1-3 (Mild discomfort)", "4-6 (Moderate discomfort)", "7-10 (Severe discomfort)", "Started today", "Started a few days ago"]
+    });
+  } else if (historyLen < 4) {
+    return res.json({
+      emergency: false,
+      needsMoreInfo: true,
+      question: "Do you have other symptoms like fever, cough, dizziness, or vomiting? Also, do you have any allergies or chronic conditions like diabetes?",
+      options: ["Yes, mild fever", "Yes, cough", "No other symptoms", "I have diabetes", "No allergies or health issues"]
+    });
+  }
+
   return res.json({
     emergency: false,
     needsMoreInfo: false,
