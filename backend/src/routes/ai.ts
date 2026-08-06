@@ -667,57 +667,22 @@ function handleMockAISymptoms(res: Response, chatHistory: any[], msg: string, la
 }
 
 function handleMockMedicineExplain(res: Response, medName: string, lang: string = 'en') {
-  if (lang === 'te') {
-    return res.json({
-      name: medName,
-      whatIsIt: `${medName} అనేది సాధారణంగా జ్వరం తగ్గించడానికి, నొప్పి నివారణకు లేదా కండరాల నొప్పుల ఉపశమనానికి ఉపయోగించే ఒక సాధారణ ఔషధం.`,
-      whatUsedFor: "జ్వరం నివారణ, తలనొప్పి, ఒంటి నొప్పులు మరియు స్వల్ప వాపుల నివారణ.",
-      howItWorks: "ఇది మెదడుకు వెళ్ళే నొప్పి సంకేతాలను మరియు జ్వరాన్ని కలిగించే ప్రోస్టాగ్లాండిన్స్ అనే రసాయనాలను అడ్డుకుంటుంది.",
-      adultUse: "సాధారణంగా రోజుకు 1 నుండి 2 సార్లు డాక్టర్ లేదా ఫార్మసిస్ట్ సలహా ప్రకారం తీసుకోవాలి.",
-      foodTiming: "కడుపు మంటను నివారించడానికి ఆహారం తీసుకున్న తర్వాత మాత్రమే దీనిని వేసుకోవాలి.",
-      dosingSchedule: "ప్రతి 6 గంటలకు ఒక టాబ్లెట్, 24 గంటల్లో 4 టాబ్లెట్లకు మించరాదు.",
-      commonSideEffects: ["తేలికపాటి నిద్రమత్తు", "కడుపు ఉబ్బరం లేదా తిప్పడం", "నోరు ఎండిపోవడం"],
-      seriousSideEffects: ["చర్మంపై ఎర్రటి దద్దుర్లు", "శ్వాస తీసుకోవడంలో ఇబ్బంది", "తీవ్రమైన మైకము"],
-      drugInteractions: ["ఇదే రసాయన కలయిక గల ఇతర మందులను కలిపి తీసుకోరాదు", "రక్తాన్ని పలచన చేసే మందులు వాడుతుంటే డాక్టరును సంప్రదించండి"],
-      foodInteractions: ["మందు వేసుకునే సమయంలో మద్యపానం పూర్తిగా నివారించండి", "అధిక కాఫీ/టీ వినియోగం తగ్గించండి"],
-      precautions: {
-        pregnancy: "గర్భవతులు తీసుకునే ముందు తప్పనిసరిగా గైనకాలజిస్ట్‌ను సంప్రదించాలి.",
-        breastfeeding: "పాలిచ్చే తల్లులు వైద్యుడిని సంప్రదించిన తర్వాతే దీనిని వాడాలి.",
-        driving: "మందు వేసుకున్న తర్వాత నిద్రమత్తుగా అనిపిస్తే వాహనాలు నడపరాదు.",
-        alcohol: "మద్యంతో కలిపి తీసుకుంటే కాలేయంపై తీవ్ర ప్రభావం పడే అవకాశం ఉంది."
-      },
-      storageInstructions: "తేమ మరియు సూర్యకాంతి తగలని పొడి ప్రదేశంలో 25°C లోపు భద్రపరచండి.",
-      missedDoseGuidance: "గుర్తుకు రాగానే వేసుకోండి, ఒకవేళ తదుపరి డోస్ సమయం దగ్గరపడితే పాత డోస్ వదిలేయండి. రెండు డోస్‌లు కలిపి వేసుకోరాదు.",
-      overdoseAdvice: "అధిక మోతాదు తీసుకున్నట్లయితే వెంటనే అత్యవసర వైద్య సహాయం లేదా సమీపంలోని విష నియంత్రణ కేంద్రానికి వెళ్ళండి.",
-      whenToContactDoctor: "తీవ్రమైన అలెర్జీ లక్షణాలు, పెదవుల వాపు లేదా శ్వాస ఆడకపోవడం వంటివి జరిగితే వెంటనే డాక్టరును సంప్రదించండి."
-    });
-  } else if (lang === 'hi') {
-    return res.json({
-      name: medName,
-      whatIsIt: `${medName} आमतौर पर हल्के दर्द, बुखार को कम करने या विशिष्ट सूजन से राहत पाने के लिए उपयोग की जाने वाली एक सामान्य दवा है।`,
-      whatUsedFor: "बुखार को कम करने, मांसपेशियों के दर्द या एलर्जी से राहत पाने के लिए।",
-      howItWorks: "यह मस्तिष्क तक जाने वाले दर्द के संकेतों और बुखार पैदा करने वाले रसायनों को रोकने का काम करती है।",
-      adultUse: "आमतौर पर डॉक्टर या फार्मासिस्ट की सलाह के अनुसार दिन में 1 से 2 बार लिया जाता है।",
-      foodTiming: "पेट की जलन से बचने के लिए इसे भोजन के बाद ही लें।",
-      dosingSchedule: "हर 6 घंटे में एक गोली, 24 घंटे में 4 गोलियों से अधिक न लें।",
-      commonSideEffects: ["हल्की नींद आना", "पेट खराब होना", "मुंह का सूखना"],
-      seriousSideEffects: ["त्वचा पर लाल चकत्ते", "निगलने में कठिनाई", "तेज चक्कर आना"],
-      drugInteractions: ["समान साल्ट वाली अन्य दवाओं के साथ न लें", "यदि खून पतला करने वाली दवा चल रही है तो डॉक्टर से सलाह लें"],
-      foodInteractions: ["दवा के दौरान शराब का सेवन न करें", "अत्यधिक कैफीन से बचें"],
-      precautions: {
-        pregnancy: "गर्भावस्था के दौरान डॉक्टर की सलाह के बिना न लें।",
-        breastfeeding: "स्तनपान कराने वाली माताएं डॉक्टर से सलाह लें।",
-        driving: "यदि चक्कर या नींद आए तो वाहन न चलाएं।",
-        alcohol: "शराब के साथ लेने से लीवर को गंभीर नुकसान हो सकता है।"
-      },
-      storageInstructions: "सूखे स्थान पर 25°C से कम तापमान पर सीधे धूप से बचाकर रखें।",
-      missedDoseGuidance: "याद आते ही इसे लें, लेकिन यदि अगली खुराक का समय हो गया है तो छूटी हुई खुराक छोड़ दें। दोहरी खुराक न लें।",
-      overdoseAdvice: "अत्यधिक खुराक लेने पर तुरंत आपातकालीन चिकित्सा सहायता लें।",
-      whenToContactDoctor: "यदि चेहरे या होठों पर सूजन, त्वचा पर दाने या सांस लेने में तकलीफ हो तो तुरंत डॉक्टर से संपर्क करें।"
-    });
+  const nameLower = medName.toLowerCase();
+  let medKey: 'paracetamol' | 'amoxicillin' | 'metformin' | 'cetirizine' | 'pantoprazole' | null = null;
+
+  if (nameLower.includes('paracetamol') || nameLower.includes('dolo') || nameLower.includes('crocin') || nameLower.includes('acetaminophen')) {
+    medKey = 'paracetamol';
+  } else if (nameLower.includes('amoxicillin') || nameLower.includes('mox')) {
+    medKey = 'amoxicillin';
+  } else if (nameLower.includes('metformin') || nameLower.includes('glycomet') || nameLower.includes('glucophage')) {
+    medKey = 'metformin';
+  } else if (nameLower.includes('cetirizine') || nameLower.includes('okacet') || nameLower.includes('zyrtec')) {
+    medKey = 'cetirizine';
+  } else if (nameLower.includes('pantoprazole') || nameLower.includes('pantocid') || nameLower.includes('pantoc') || nameLower.includes('pan-d')) {
+    medKey = 'pantoprazole';
   }
 
-  res.json({
+  let details = {
     name: medName,
     whatIsIt: `${medName} is commonly used for managing mild pain, reduction of fever, or specific chronic control.`,
     whatUsedFor: "Fever reduction, minor muscle aches, or allergy relief depending on active drug compound.",
@@ -739,7 +704,131 @@ function handleMockMedicineExplain(res: Response, medName: string, lang: string 
     missedDoseGuidance: "Take it as soon as you remember, unless it is close to the next dose. Do not double dose.",
     overdoseAdvice: "Immediately contact emergency services or go to the nearest poison control centre.",
     whenToContactDoctor: "If you develop hives, breathing trouble, or if your symptoms worsen."
-  });
+  };
+
+  if (medKey === 'paracetamol') {
+    details = {
+      name: medName,
+      whatIsIt: "Paracetamol (Acetaminophen) is a widely used over-the-counter pain reliever (analgesic) and fever reducer (antipyretic).",
+      whatUsedFor: "Fever reduction, headache, toothache, muscle aches, and mild arthritis pain.",
+      howItWorks: "It blocks chemical messengers (prostaglandins) in the brain that signal pain and regulate body temperature.",
+      adultUse: "500mg to 1000mg every 4 to 6 hours as needed.",
+      foodTiming: "Can be taken with or without food.",
+      dosingSchedule: "Maximum 4000mg (4g) in 24 hours to prevent liver damage.",
+      commonSideEffects: ["Mild nausea", "Constipation", "Headache"],
+      seriousSideEffects: ["Dark urine", "Yellowing eyes/skin (jaundice)", "Severe skin rash"],
+      drugInteractions: ["Do not use with other products containing paracetamol/acetaminophen", "Alcohol increases liver toxicity"],
+      foodInteractions: ["Avoid alcohol while using this medicine"],
+      precautions: {
+        pregnancy: "Generally considered safe, but use the lowest effective dose for the shortest time.",
+        breastfeeding: "Considered compatible with breastfeeding in standard doses.",
+        driving: "Does not cause drowsiness; safe to drive.",
+        alcohol: "Avoid alcohol as the combination significantly increases the risk of severe liver damage."
+      },
+      storageInstructions: "Store below 25°C in a dry place away from direct sunlight.",
+      missedDoseGuidance: "Take as soon as you remember. If it is almost time for your next dose, skip the missed dose. Do not double dose.",
+      overdoseAdvice: "Immediately seek emergency medical attention. Paracetamol overdose can cause fatal liver failure.",
+      whenToContactDoctor: "If you develop signs of an allergic reaction (swelling of face/lips/throat, difficulty breathing) or skin peeling."
+    };
+  } else if (medKey === 'amoxicillin') {
+    details = {
+      name: medName,
+      whatIsIt: "Amoxicillin is a penicillin-type antibiotic used to treat a wide variety of bacterial infections.",
+      whatUsedFor: "Bacterial infections of the ear, nose, throat, urinary tract, lungs (pneumonia), and skin.",
+      howItWorks: "It stops the growth of bacteria by preventing them from forming their protective cell walls.",
+      adultUse: "Typically 250mg to 500mg every 8 hours, or 500mg to 875mg every 12 hours as prescribed by a doctor.",
+      foodTiming: "Can be taken with or without food, but food helps reduce stomach irritation.",
+      dosingSchedule: "Take at evenly spaced intervals and finish the entire prescribed course, even if symptoms resolve.",
+      commonSideEffects: ["Diarrhea", "Nausea", "Vomiting", "Mild skin rash"],
+      seriousSideEffects: ["Severe watery or bloody diarrhea", "Anaphylaxis (swelling of lips/tongue, shortness of breath)", "Easy bruising"],
+      drugInteractions: ["May reduce the effectiveness of oral contraceptives", "Allopurinol may increase rash risk"],
+      foodInteractions: ["Probiotic foods like yogurt can help restore gut bacteria and prevent diarrhea"],
+      precautions: {
+        pregnancy: "Considered safe during pregnancy, but consult your obstetrician first.",
+        breastfeeding: "Passes into breast milk in small amounts; consult a pediatrician.",
+        driving: "Safe to drive unless you experience severe dizziness or fatigue.",
+        alcohol: "Avoid alcohol, as it can weaken your immune system and delay recovery."
+      },
+      storageInstructions: "Store capsules/tablets at room temperature. Liquid suspensions should be kept in a refrigerator.",
+      missedDoseGuidance: "Take it as soon as you remember. If it is close to your next dose, skip it. Do not double dose.",
+      overdoseAdvice: "Contact a poison control center or emergency room immediately if an overdose occurs.",
+      whenToContactDoctor: "Stop taking and contact your doctor immediately if you develop a skin rash, fever, joint pain, or severe diarrhea."
+    };
+  } else if (medKey === 'metformin') {
+    details = {
+      name: medName,
+      whatIsIt: "Metformin is an oral anti-diabetic medication that helps control blood sugar levels for people with type 2 diabetes.",
+      whatUsedFor: "Management of type 2 diabetes mellitus, improving insulin sensitivity and lowering glucose levels.",
+      howItWorks: "It decreases glucose production in the liver, delays glucose absorption in the intestines, and increases insulin sensitivity.",
+      adultUse: "Usually started at 500mg once or twice daily with meals, adjusted gradually by your doctor.",
+      foodTiming: "Must be taken with meals to minimize stomach upset and digestive side effects.",
+      dosingSchedule: "Take consistently at the same times every day as directed by your physician.",
+      commonSideEffects: ["Nausea", "Diarrhea", "Stomach ache", "Metallic taste in the mouth"],
+      seriousSideEffects: ["Lactic acidosis (rare but life-threatening build-up of acid in the blood - symptoms include breathing trouble, muscle pain)"],
+      drugInteractions: ["Cimetidine, diuretics, and iodinated contrast media (used for X-rays) can increase risks"],
+      foodInteractions: ["Avoid excessive alcohol consumption (significantly increases the risk of lactic acidosis)"],
+      precautions: {
+        pregnancy: "Insulin is typically preferred during pregnancy; consult your doctor to discuss options.",
+        breastfeeding: "Consult your doctor; metformin passes into breast milk in low concentrations.",
+        driving: "Safe to drive. Does not cause low blood sugar (hypoglycemia) when used alone.",
+        alcohol: "Strictly avoid alcohol due to the high risk of developing lactic acidosis."
+      },
+      storageInstructions: "Store at room temperature away from moisture and heat.",
+      missedDoseGuidance: "Take with food as soon as you remember. If it is almost time for the next dose, skip it. Do not double dose.",
+      overdoseAdvice: "Seek emergency medical care immediately. Symptoms of overdose can include severe low blood sugar and lactic acidosis.",
+      whenToContactDoctor: "Contact your physician immediately if you experience unusual muscle pain, cold feeling, trouble breathing, or severe fatigue."
+    };
+  } else if (medKey === 'cetirizine') {
+    details = {
+      name: medName,
+      whatIsIt: "Cetirizine is a second-generation antihistamine used to relieve allergy symptoms without causing heavy drowsiness.",
+      whatUsedFor: "Runny nose, sneezing, itchy or watery eyes, and allergic skin hives/itching.",
+      howItWorks: "It blocks histamine, a natural substance the body produces during an allergic response.",
+      adultUse: "Typically 5mg to 10mg once daily depending on symptom severity.",
+      foodTiming: "Can be taken with or without food.",
+      dosingSchedule: "Once daily, preferably in the evening if it causes mild drowsiness.",
+      commonSideEffects: ["Mild drowsiness", "Dry mouth", "Fatigue", "Headache"],
+      seriousSideEffects: ["Difficulty urinating", "Rapid heart rate", "Blurred vision"],
+      drugInteractions: ["Avoid using with sedatives, sleeping pills, or muscle relaxants as drowsiness will worsen"],
+      foodInteractions: ["Avoid taking with large amounts of caffeine"],
+      precautions: {
+        pregnancy: "Consult your doctor; generally avoided unless clearly needed.",
+        breastfeeding: "Passes into breast milk; not recommended while breastfeeding.",
+        driving: "Be careful. Can cause mild drowsiness in some individuals; do not drive if affected.",
+        alcohol: "Avoid alcohol as it will significantly increase drowsiness and impair alertness."
+      },
+      storageInstructions: "Store at room temperature below 25°C in a dry place.",
+      missedDoseGuidance: "Take it as soon as you remember. If the next dose is due within a few hours, skip the missed dose.",
+      overdoseAdvice: "An overdose can cause extreme drowsiness in adults, or agitation and restlessness in children. Contact emergency department.",
+      whenToContactDoctor: "Seek immediate medical attention if you experience severe dizziness, swelling of lips/tongue, or difficulty urinating."
+    };
+  } else if (medKey === 'pantoprazole') {
+    details = {
+      name: medName,
+      whatIsIt: "Pantoprazole is a proton pump inhibitor (PPI) that decreases the amount of acid produced in the stomach.",
+      whatUsedFor: "Acid reflux, gastroesophageal reflux disease (GERD), heartburn, and stomach ulcers.",
+      howItWorks: "It shuts down the acid-producing proton pumps in the stomach wall to allow healing.",
+      adultUse: "Typically 40mg once daily taken in the morning.",
+      foodTiming: "Must be taken 30 to 60 minutes before breakfast (on an empty stomach) for best efficacy.",
+      dosingSchedule: "Once daily in the morning as prescribed, usually for a course of 4 to 8 weeks.",
+      commonSideEffects: ["Headache", "Mild diarrhea", "Stomach gas or bloating", "Nausea"],
+      seriousSideEffects: ["Kidney problems (interstitial nephritis)", "Severe joint pain", "Chronic use may cause Vitamin B12 deficiency"],
+      drugInteractions: ["Reduces absorption of drugs requiring acid (like ketoconazole)", "May increase methotrexate levels"],
+      foodInteractions: ["Avoid spicy, acidic, fatty, or caffeinated foods that trigger acid reflux"],
+      precautions: {
+        pregnancy: "Use only if clearly needed and prescribed by your obstetrician.",
+        breastfeeding: "Passes into breast milk; consult your physician before using.",
+        driving: "Safe to drive; does not affect alertness.",
+        alcohol: "Avoid alcohol as it stimulates acid production and worsens reflux symptoms."
+      },
+      storageInstructions: "Store at room temperature in a dry place.",
+      missedDoseGuidance: "Take it if you remember before eating. If you've already eaten, skip it and take the next dose the following morning.",
+      overdoseAdvice: "Overdose is rarely serious, but consult a doctor if you experience any severe symptoms.",
+      whenToContactDoctor: "Contact your doctor if you experience severe watery diarrhea, new or worsening joint pain, or signs of kidney trouble."
+    };
+  }
+
+  return res.json(details);
 }
 
 function handleMockNutrition(res: Response, profile: any, chronic: string, allergies: string, lang: string = 'en') {
