@@ -34,7 +34,8 @@ const Login: React.FC = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Invalid credentials');
+        const errMsg = data.details ? `${data.error} (${data.details})` : (data.error || 'Invalid credentials');
+        throw new Error(errMsg);
       }
 
       // If user is registered but not verified, show OTP modal
