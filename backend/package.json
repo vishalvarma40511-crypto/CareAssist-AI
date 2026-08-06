@@ -2,6 +2,7 @@
   "name": "careassist-backend",
   "version": "1.0.0",
   "description": "Backend API for CareAssist AI platform",
+  "license": "MIT",
   "main": "dist/index.js",
   "type": "commonjs",
   "scripts": {
