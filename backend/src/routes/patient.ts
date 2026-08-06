@@ -318,4 +318,56 @@ router.post('/messages', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// GET /api/patient/messages/:appointmentId — fetch message history for a consultation
+router.get('/messages/:appointmentId', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    const patientId = req.user?.id;
+
+    // Verify patient owns this appointment
+    const appts = await query(
+      `SELECT * FROM appointments WHERE id = $1 AND patient_id = $2`,
+      [appointmentId, patientId]
+    );
+    if (!appts || appts.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const messages = await query(
+      `SELECT m.*, u.name as sender_name, u.role as sender_role
+       FROM messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.appointment_id = $1
+       ORDER BY m.created_at ASC LIMIT 200`,
+      [appointmentId]
+    );
+    res.json(messages || []);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// GET /api/patient/appointments/active — get accepted appointments within current time window
+router.get('/appointments/active', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const now = new Date().toISOString();
+
+    const appts = await query(
+      `SELECT a.*, u.name as doctor_name, dp.specialty
+       FROM appointments a
+       JOIN users u ON a.doctor_id = u.id
+       JOIN doctor_profiles dp ON u.id = dp.user_id
+       WHERE a.patient_id = $1
+         AND a.status = 'accepted'
+         AND a.appointment_date <= $2
+         AND a.appointment_date >= $3`,
+      [patientId, now, new Date(Date.now() - 60 * 60 * 1000).toISOString()]
+    );
+    res.json(appts || []);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch active appointments' });
+  }
+});
+
 export default router;

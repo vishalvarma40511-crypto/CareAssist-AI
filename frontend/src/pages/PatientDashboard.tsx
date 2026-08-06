@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import EmergencyAlert from '../components/EmergencyAlert';
 import TiltCard from '../components/TiltCard';
+import ConsultationPanel from '../components/ConsultationPanel';
 import { 
   Heart, Calendar, Pill, Plus, Check, MessageSquare, 
   Send, Mic, Volume2, ShieldAlert, Award, FileText, 
@@ -77,6 +78,9 @@ const PatientDashboard: React.FC = () => {
   const [reportAnalysis, setReportAnalysis] = useState<any>(null);
   const [reportError, setReportError] = useState<string | null>(null);
   const [isReadingReport, setIsReadingReport] = useState(false);
+
+  // Consultation Panel State
+  const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
 
   // Speech Recognition API reference
   const recognitionRef = useRef<any>(null);
@@ -550,6 +554,17 @@ const PatientDashboard: React.FC = () => {
         <EmergencyAlert onClose={() => setTriggerEmergency(false)} />
       )}
 
+      {/* Real-time Consultation Panel Overlay */}
+      {activeConsultation && (
+        <ConsultationPanel
+          appointment={activeConsultation}
+          user={user!}
+          token={token!}
+          apiBase={apiBase}
+          onClose={() => setActiveConsultation(null)}
+        />
+      )}
+
       {/* Main Tab Links */}
       <div className="mb-8 flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <button 
@@ -784,16 +799,34 @@ const PatientDashboard: React.FC = () => {
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{appt.specialty}</p>
                       <p className="text-xs text-secondary mt-1">{new Date(appt.appointment_date).toLocaleString()}</p>
                       
-                      {appt.status === 'accepted' && (
-                        <div className="mt-3 flex gap-2">
-                          <button 
-                            onClick={() => openDoctorChat(appt.doctor_id)} 
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 py-1.5 text-[10px] font-bold text-brand-600 hover:bg-brand-100 dark:bg-brand-950/20 dark:text-brand-400"
-                          >
-                            <MessageSquare className="h-3 w-3" /> Chat Room
-                          </button>
-                        </div>
-                      )}
+                      {appt.status === 'accepted' && (() => {
+                        const start = new Date(appt.appointment_date);
+                        const end = new Date(start.getTime() + 60 * 60 * 1000);
+                        const now = new Date();
+                        const isLive = now >= start && now <= end;
+                        const isSoon = now < start && (start.getTime() - now.getTime()) < 15 * 60 * 1000;
+                        return (
+                          <div className="mt-3 flex flex-col gap-2">
+                            {isLive ? (
+                              <button
+                                onClick={() => setActiveConsultation(appt)}
+                                className="flex items-center justify-center gap-2 w-full rounded-xl py-2 text-xs font-bold text-white shadow-lg transition-all animate-pulse-slow"
+                                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                              >
+                                <Video className="h-3.5 w-3.5" /> Join Consultation Now
+                              </button>
+                            ) : isSoon ? (
+                              <div className="flex items-center justify-center gap-1.5 w-full rounded-xl py-2 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800">
+                                ⏰ Opens in {Math.ceil((start.getTime() - now.getTime()) / 60000)} min
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1.5 w-full rounded-xl py-2 text-xs font-semibold bg-slate-50 text-slate-500 border border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                                🔒 Chat opens at {new Date(appt.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import ConsultationPanel from '../components/ConsultationPanel';
 import { 
   Clipboard, Calendar, MessageSquare, Plus, Trash2, 
-  UserCheck, AlertCircle, FileText, Send, User, ChevronRight, Check
+  UserCheck, AlertCircle, FileText, Send, User, ChevronRight, Check, Video
 } from 'lucide-react';
 
 const DoctorDashboard: React.FC = () => {
@@ -27,6 +28,9 @@ const DoctorDashboard: React.FC = () => {
   const [activePatientChatId, setActivePatientChatId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
+
+  // Consultation Panel State
+  const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
 
   useEffect(() => {
     if (user?.isVerified) {
@@ -201,6 +205,17 @@ const DoctorDashboard: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+
+      {/* Real-time Consultation Panel Overlay */}
+      {activeConsultation && (
+        <ConsultationPanel
+          appointment={activeConsultation}
+          user={user!}
+          token={token!}
+          apiBase={apiBase}
+          onClose={() => setActiveConsultation(null)}
+        />
+      )}
       
       {/* Tab bar header */}
       <div className="mb-8 flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
@@ -286,20 +301,38 @@ const DoctorDashboard: React.FC = () => {
                       </button>
                     )}
                     {selectedAppt.status === 'accepted' && (
-                      <>
-                        <button 
-                          onClick={() => openChatRoom(selectedAppt.patient_id)}
-                          className="rounded-xl bg-slate-900 border border-slate-750 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 flex items-center gap-1"
-                        >
-                          <MessageSquare className="h-4 w-4" /> Message Room
-                        </button>
-                        <button 
-                          onClick={() => handleUpdateStatus(selectedAppt.id, 'completed')}
-                          className="rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
-                        >
-                          Mark Completed
-                        </button>
-                      </>
+                        <>
+                          {(() => {
+                            const start = new Date(selectedAppt.appointment_date);
+                            const end = new Date(start.getTime() + 60 * 60 * 1000);
+                            const now = new Date();
+                            const isLive = now >= start && now <= end;
+                            const isSoon = now < start && (start.getTime() - now.getTime()) < 15 * 60 * 1000;
+                            return isLive ? (
+                              <button
+                                onClick={() => setActiveConsultation(selectedAppt)}
+                                className="rounded-xl px-4 py-2 text-xs font-bold text-white flex items-center gap-1 shadow-lg"
+                                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                              >
+                                <Video className="h-4 w-4" /> Start Consultation
+                              </button>
+                            ) : isSoon ? (
+                              <div className="rounded-xl bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 text-xs font-semibold">
+                                ⏰ Slot in {Math.ceil((start.getTime() - now.getTime()) / 60000)} min
+                              </div>
+                            ) : (
+                              <div className="rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 px-4 py-2 text-xs font-semibold">
+                                🔒 Opens at {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            );
+                          })()}
+                          <button 
+                            onClick={() => handleUpdateStatus(selectedAppt.id, 'completed')}
+                            className="rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
+                          >
+                            Mark Completed
+                          </button>
+                        </>
                     )}
                     <button 
                       onClick={() => handleUpdateStatus(selectedAppt.id, 'cancelled')}
