@@ -46,6 +46,23 @@ app.use('/api/patient', patientRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Root welcome endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'CareAssist AI Backend API',
+    version: '1.0.0',
+    message: '🏥 CareAssist AI is running. Use /health to check status or /api/* for endpoints.',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      ai: '/api/ai',
+      patient: '/api/patient',
+      doctor: '/api/doctor'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'CareAssist AI backend is running smoothly' });
