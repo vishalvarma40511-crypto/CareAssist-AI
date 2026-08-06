@@ -8,28 +8,14 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 // If connection string is missing or doesn't start with postgres/postgresql, we fallback to SQLite
-const isPostgres = !!(connectionString?.startsWith('postgres://') || connectionString?.startsWith('postgresql://'));
+let isPostgres = !!(connectionString?.startsWith('postgres://') || connectionString?.startsWith('postgresql://'));
 
 let pgPool: Pool | null = null;
 let sqliteDb: sqlite3.Database | null = null;
 
-if (isPostgres) {
-  pgPool = new Pool({
-    connectionString,
-    ssl: connectionString?.includes('supabase') || connectionString?.includes('render.com') || connectionString?.includes('dpg-')
-      ? { rejectUnauthorized: false }
-      : undefined,
-  });
-
-  pgPool.on('connect', () => {
-    console.log('PostgreSQL database connected successfully');
-  });
-
-  pgPool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
-  });
-} else {
-  // SQLite mode
+function initializeSqlite() {
+  if (sqliteDb) return;
+  
   const dbPath = path.resolve(__dirname, '../database.sqlite');
   const dbExists = fs.existsSync(dbPath);
   
@@ -52,6 +38,25 @@ if (isPostgres) {
       }
     }
   });
+}
+
+if (isPostgres) {
+  pgPool = new Pool({
+    connectionString,
+    ssl: connectionString?.includes('supabase') || connectionString?.includes('render.com') || connectionString?.includes('dpg-')
+      ? { rejectUnauthorized: false }
+      : undefined,
+  });
+
+  pgPool.on('connect', () => {
+    console.log('PostgreSQL database connected successfully');
+  });
+
+  pgPool.on('error', (err) => {
+    console.error('Unexpected error on idle client', err);
+  });
+} else {
+  initializeSqlite();
 }
 
 function initSqliteSchema() {
@@ -224,9 +229,9 @@ function initSqliteSchema() {
       ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'General Medicine', 'MD-118839-US', 'Family physician providing consultation for acute and chronic conditions.', '221B Baker St, London, UK', 75.00, 1)`
   ];
 
-  sqliteDb.serialize(() => {
+  sqliteDb!.serialize(() => {
     for (const stmt of schema) {
-      sqliteDb.run(stmt, (err) => {
+      sqliteDb!.run(stmt, (err) => {
         if (err) {
           console.error(`Error executing schema statement: ${stmt.substring(0, 50)}...`, err);
         }
@@ -275,6 +280,20 @@ export const query = async (text: string, params: any[] = []): Promise<{ rows: a
       return res;
     } catch (error: any) {
       console.error(`Database Query Error (PG): ${error.message} \nQuery: ${text}`);
+      
+      // Connection or authentication failures
+      const isConnectionError = error.code === 'ENETUNREACH' || 
+                                error.code === 'ECONNREFUSED' || 
+                                error.code === 'ETIMEDOUT' || 
+                                error.message.includes('password authentication failed') ||
+                                error.message.includes('getaddrinfo');
+      
+      if (isConnectionError) {
+        console.warn('⚠️ WARNING: PostgreSQL connection failed. Falling back to local SQLite database!');
+        isPostgres = false;
+        initializeSqlite();
+        return query(text, params);
+      }
       throw error;
     }
   } else {
