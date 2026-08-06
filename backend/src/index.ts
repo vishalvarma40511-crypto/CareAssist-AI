@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import dns from 'dns';
+
+// Force Node.js to prioritize IPv4 over IPv6 when resolving hosts (fixes ENETUNREACH on Render/Supabase)
+dns.setDefaultResultOrder('ipv4first');
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
