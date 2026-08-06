@@ -15,9 +15,11 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        value: "postgresql://postgres:Tvishal%40200@db.ktfvueyryeratgfutzfh.supabase.co:5432/postgres"
+        fromDatabase:
+          name: careassist-db
+          property: connectionString
       - key: GEMINI_API_KEY
-        value: ""  # Add your Gemini key in Render dashboard
+        value: ""  # Set this in your Render dashboard environment settings
 
   # Frontend Static Site
   - type: static
@@ -34,3 +36,9 @@ services:
       - path: /*
         name: Cache-Control
         value: public, max-age=0, must-revalidate
+
+databases:
+  - name: careassist-db
+    plan: free
+    databaseName: careassist
+    user: careassist_user
