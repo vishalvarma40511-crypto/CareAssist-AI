@@ -22,9 +22,8 @@ services:
         value: ""  # Set this in your Render dashboard environment settings
 
   # Frontend Static Site
-  - type: web
+  - type: static
     name: careassist-frontend
-    env: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -35,9 +34,8 @@ services:
         destination: /index.html
     headers:
       - path: /*
-        headers:
-          - key: Cache-Control
-            value: public, max-age=0, must-revalidate
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
 
 databases:
   - name: careassist-db
