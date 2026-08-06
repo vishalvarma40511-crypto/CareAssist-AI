@@ -8,7 +8,7 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 // If connection string is missing or doesn't start with postgres/postgresql, we fallback to SQLite
-let isPostgres = !!(connectionString?.startsWith('postgres://') || connectionString?.startsWith('postgresql://'));
+export let isPostgres = !!(connectionString?.startsWith('postgres://') || connectionString?.startsWith('postgresql://'));
 
 let pgPool: Pool | null = null;
 let sqliteDb: sqlite3.Database | null = null;
