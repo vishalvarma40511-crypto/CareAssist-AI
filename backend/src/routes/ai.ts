@@ -32,7 +32,7 @@ router.post('/assess-symptoms', authenticateToken, async (req: Request, res: Res
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
       }
@@ -183,7 +183,7 @@ router.post('/explain-medicine', authenticateToken, async (req: Request, res: Re
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
       }
@@ -265,7 +265,7 @@ router.post('/nutrition-plan', authenticateToken, async (req: Request, res: Resp
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
       }
@@ -342,7 +342,7 @@ router.post('/analyze-report', authenticateToken, async (req: Request, res: Resp
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
       }
