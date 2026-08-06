@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+
+# Production builds
+dist/
+build/
+out/
+
+# Local databases & env secrets
+.env
+*.sqlite
+database.sqlite
+
+# System logs & local logs
+*.log
+.DS_Store
+Thumbs.db
+.agents/
+.gemini/
