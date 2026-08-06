@@ -15,7 +15,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        value: "postgresql://postgres:[Tvishal@200]@db.ktfvueyryeratgfutzfh.supabase.co:5432/postgres"
+        value: "postgresql://postgres:Tvishal%40200@db.ovnjomtgwphcbxjdbldi.supabase.co:5432/postgres"
       - key: GEMINI_API_KEY
         value: ""  # Add your Gemini key in Render dashboard
 
