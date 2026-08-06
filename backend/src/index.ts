@@ -10,7 +10,7 @@ dns.setDefaultResultOrder('ipv4first');
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { query } from './db';
+import { query, isPostgres } from './db';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -222,8 +222,7 @@ io.on('connection', (socket) => {
 
 // Auto-initialize PostgreSQL schema if running on a fresh database
 async function initPostgresSchema() {
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (!dbUrl.startsWith('postgres://') && !dbUrl.startsWith('postgresql://')) return;
+  if (!isPostgres) return;
 
   console.log('Checking and initializing PostgreSQL schema...');
   try {
