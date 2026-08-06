@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-scale: 1;
+    --bg-gradient-start: #f8fafc;
+    --bg-gradient-end: #f1f5f9;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(226, 232, 240, 0.8);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-glow: rgba(14, 165, 233, 0.15);
+  }
+
+  .dark {
+    --bg-gradient-start: #0f172a;
+    --bg-gradient-end: #020617;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --card-border: rgba(51, 65, 85, 0.5);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-glow: rgba(56, 189, 248, 0.2);
+  }
+
+  .high-contrast {
+    --bg-gradient-start: #000000;
+    --bg-gradient-end: #000000;
+    --card-bg: #111111;
+    --card-border: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #ffff00;
+    --accent-glow: rgba(255, 255, 255, 0.3);
+  }
+
+  body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    min-height: 100vh;
+    color: var(--text-primary);
+  }
+
+  /* Accessibility Font Size Scales */
+  html {
+    font-size: calc(16px * var(--font-scale));
+  }
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px 0 var(--accent-glow);
+  border-color: rgba(14, 165, 233, 0.4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
+}
+
+/* Pulse animation for active simulation calls */
+@keyframes heart-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.pulse-call {
+  animation: heart-pulse 2s infinite ease-in-out;
+}
+
+/* Slide in animation */
+@keyframes slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Radial Dashboard Score */
+.radial-score {
+  background: radial-gradient(closest-side, white 79%, transparent 80% 100%),
+              conic-gradient(var(--score-color) var(--score-percent), #e2e8f0 0);
+}
+.dark .radial-score {
+  background: radial-gradient(closest-side, #1e293b 79%, transparent 80% 100%),
+              conic-gradient(var(--score-color) var(--score-percent), #334155 0);
+}
+
+@keyframes scan {
+  0% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(280px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.3; }
+}
