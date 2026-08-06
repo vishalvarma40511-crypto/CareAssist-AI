@@ -128,11 +128,11 @@ io.on('connection', (socket) => {
         `SELECT * FROM appointments WHERE id = $1 AND (patient_id = $2 OR doctor_id = $2) AND status = 'accepted'`,
         [appointmentId, user.id]
       );
-      if (!appts || appts.length === 0) {
+      if (!appts || appts.rows.length === 0) {
         socket.emit('error', { message: 'Appointment not found or not accepted' });
         return;
       }
-      const appt = appts[0];
+      const appt = appts.rows[0];
 
       if (!isWithinConsultationSlot(appt.appointment_date)) {
         socket.emit('error', { message: 'Consultation session is not active at this time' });
@@ -173,18 +173,18 @@ io.on('connection', (socket) => {
         `SELECT * FROM appointments WHERE id = $1 AND (patient_id = $2 OR doctor_id = $2) AND status = 'accepted'`,
         [appointmentId, user.id]
       );
-      if (!appts || appts.length === 0) {
+      if (!appts || appts.rows.length === 0) {
         socket.emit('error', { message: 'Appointment not found' });
         return;
       }
 
-      if (!isWithinConsultationSlot(appts[0].appointment_date)) {
+      if (!isWithinConsultationSlot(appts.rows[0].appointment_date)) {
         socket.emit('error', { message: 'Consultation time window has ended' });
         return;
       }
 
       // Determine receiver
-      const appt = appts[0];
+      const appt = appts.rows[0];
       const receiverId = user.id === appt.patient_id ? appt.doctor_id : appt.patient_id;
 
       // Save to DB
@@ -195,7 +195,7 @@ io.on('connection', (socket) => {
       );
 
       const message = {
-        ...(saved?.[0] || {}),
+        ...(saved?.rows?.[0] || {}),
         sender_name: user.name,
         sender_role: user.role,
         content: content.trim(),

@@ -187,7 +187,7 @@ router.get('/messages/:appointmentId', async (req: AuthenticatedRequest, res: Re
       `SELECT * FROM appointments WHERE id = $1 AND doctor_id = $2`,
       [appointmentId, doctorId]
     );
-    if (!appts || appts.length === 0) {
+    if (!appts || appts.rows.length === 0) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -199,7 +199,7 @@ router.get('/messages/:appointmentId', async (req: AuthenticatedRequest, res: Re
        ORDER BY m.created_at ASC LIMIT 200`,
       [appointmentId]
     );
-    res.json(messages || []);
+    res.json(messages?.rows || []);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
@@ -221,7 +221,7 @@ router.get('/appointments/active', async (req: AuthenticatedRequest, res: Respon
          AND a.appointment_date >= $3`,
       [doctorId, now, new Date(Date.now() - 60 * 60 * 1000).toISOString()]
     );
-    res.json(appts || []);
+    res.json(appts?.rows || []);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch active appointments' });
   }
