@@ -780,7 +780,7 @@ const PatientDashboard: React.FC = () => {
                   onClick={() => setActiveTab('booking')}
                   className="text-xs font-bold text-brand-600 hover:underline dark:text-brand-400"
                 >
-                  Book Doctor
+                  Book an consultation
                 </button>
               </div>
 
