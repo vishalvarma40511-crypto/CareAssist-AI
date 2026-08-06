@@ -16,7 +16,7 @@ let sqliteDb: sqlite3.Database | null = null;
 if (isPostgres) {
   pgPool = new Pool({
     connectionString,
-    ssl: connectionString?.includes('supabase.co') || connectionString?.includes('render.com')
+    ssl: connectionString?.includes('supabase') || connectionString?.includes('render.com')
       ? { rejectUnauthorized: false }
       : undefined,
   });

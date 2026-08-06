@@ -371,7 +371,7 @@ const PatientDashboard: React.FC = () => {
         },
         body: JSON.stringify({
           doctorId: selectedDoctorId,
-          appointmentDate: apptDate,
+          appointmentDate: new Date(apptDate).toISOString(),
           type: apptType,
           reason: apptReason
         })
@@ -383,6 +383,9 @@ const PatientDashboard: React.FC = () => {
         setApptReason('');
         setActiveTab('dashboard');
         fetchDashboardData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Server Error: ${errData.details || errData.error || res.statusText}`);
       }
     } catch (err) {
       console.error(err);

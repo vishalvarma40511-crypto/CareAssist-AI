@@ -30,7 +30,7 @@ const adherenceSchema = z.object({
 
 const appointmentSchema = z.object({
   doctorId: z.string().uuid(),
-  appointmentDate: z.string(), // ISO String
+  appointmentDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date string" }),
   type: z.enum(['video', 'voice', 'chat']),
   reason: z.string().optional()
 });
@@ -259,7 +259,8 @@ router.post('/appointments', async (req: AuthenticatedRequest, res: Response) =>
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors });
-    res.status(500).json({ error: 'Failed to book appointment' });
+    console.error("Error booking appointment:", error);
+    res.status(500).json({ error: 'Failed to book appointment', details: error?.message || String(error) });
   }
 });
 
