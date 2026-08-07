@@ -30,12 +30,16 @@ const ConsultationPanel: React.FC<ConsultationPanelProps> = ({
   apiBase,
   onClose
 }) => {
-  const [activeView, setActiveView] = useState<'chat' | 'video'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'video'>(
+    appointment.type === 'video' || appointment.type === 'voice' ? 'video' : 'chat'
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState(false);
   const [socketError, setSocketError] = useState<string | null>(null);
-  const [videoActive, setVideoActive] = useState(false);
+  const [videoActive, setVideoActive] = useState(
+    appointment.type === 'video' || appointment.type === 'voice'
+  );
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 

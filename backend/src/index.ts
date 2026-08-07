@@ -167,7 +167,7 @@ io.on('connection', (socket) => {
          ORDER BY m.created_at ASC LIMIT 100`,
         [appointmentId]
       );
-      socket.emit('message_history', messages || []);
+      socket.emit('message_history', messages?.rows || []);
     } catch (err) {
       console.error('[Socket] join_consultation error:', err);
       socket.emit('error', { message: 'Failed to join consultation' });
