@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MapPin, Navigation, Star, Phone, Clock, Search, Loader2, AlertCircle, Building2, Pill, FlaskConical, Droplets, Stethoscope, RefreshCw } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface Place {
   id: number;
@@ -39,30 +40,15 @@ function formatDist(m: number): string {
   return `${(m / 1000).toFixed(1)} km`;
 }
 
-async function fetchPlaces(lat: number, lon: number, category: Category, radiusM = 5000): Promise<Place[]> {
-  const cat = CATEGORIES.find(c => c.val === category)!;
+async function fetchPlaces(lat: number, lon: number, category: Category, apiBase: string, token: string, radiusM = 5000): Promise<Place[]> {
+  const url = `${apiBase}/patient/nearby-places?lat=${lat}&lon=${lon}&category=${category}&radius=${radiusM}`;
 
-  // For blood_banks and labs, also check alternate tags
-  const altTags: Record<Category, string[]> = {
-    hospitals: ['amenity=hospital'],
-    clinics: ['amenity=clinic', 'amenity=doctors'],
-    pharmacies: ['amenity=pharmacy'],
-    diagnostic_centers: ['amenity=laboratory', 'healthcare=laboratory', 'amenity=clinic[healthcare=diagnostic]'],
-    blood_banks: ['amenity=blood_bank', 'healthcare=blood_bank'],
-  };
-
-  const tagFilters = altTags[category]
-    .map(tag => {
-      const [key, val] = tag.split('=');
-      return val ? `node["${key}"="${val}"](around:${radiusM},${lat},${lon});way["${key}"="${val}"](around:${radiusM},${lat},${lon});` : '';
-    })
-    .join('\n');
-
-  const query = `[out:json][timeout:25];(\n${tagFilters}\n);out center tags;`;
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch from Overpass API');
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to fetch from Overpass API proxy');
   const data = await res.json();
 
   const places: Place[] = (data.elements || [])
@@ -98,6 +84,7 @@ async function fetchPlaces(lat: number, lon: number, category: Category, radiusM
 }
 
 const NearbyServices: React.FC = () => {
+  const { apiBase, token } = useAuth();
   const [locationState, setLocationState] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
@@ -160,7 +147,7 @@ const NearbyServices: React.FC = () => {
     setPlaces([]);
     setSelectedPlace(null);
     try {
-      const results = await fetchPlaces(userLat, userLon, category);
+      const results = await fetchPlaces(userLat, userLon, category, apiBase, token || '');
       if (results.length === 0) {
         setError(`No ${category.replace('_', ' ')} found within 5 km. Try expanding your search.`);
       }
@@ -170,7 +157,7 @@ const NearbyServices: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [userLat, userLon, category]);
+  }, [userLat, userLon, category, apiBase, token]);
 
   useEffect(() => {
     if (locationState === 'granted') {

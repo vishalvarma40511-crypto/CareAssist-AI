@@ -532,4 +532,72 @@ router.post('/diet', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// Helper for proxying HTTPS requests with a User-Agent
+import https from 'https';
+
+const fetchHttpsJson = (url: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: {
+        'User-Agent': 'CareAssist-AI-Platform/1.0 (contact: support@careassist.ai)',
+        'Accept': 'application/json'
+      },
+      timeout: 20000 // 20s timeout
+    }, (res) => {
+      if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+        return reject(new Error(`Status Code: ${res.statusCode}`));
+      }
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve(data));
+    });
+    
+    req.on('error', (err) => reject(err));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+};
+
+// GET /api/patient/nearby-places — Proxy to Overpass API to avoid browser CORS issues
+router.get('/nearby-places', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const lat = parseFloat(req.query.lat as string);
+    const lon = parseFloat(req.query.lon as string);
+    const category = req.query.category as string;
+    const radius = parseInt(req.query.radius as string || '5000', 10);
+
+    if (isNaN(lat) || isNaN(lon) || !category) {
+      return res.status(400).json({ error: 'Latitude, longitude and category are required' });
+    }
+
+    const altTags: Record<string, string[]> = {
+      hospitals: ['amenity=hospital'],
+      clinics: ['amenity=clinic', 'amenity=doctors'],
+      pharmacies: ['amenity=pharmacy'],
+      diagnostic_centers: ['amenity=laboratory', 'healthcare=laboratory'],
+      blood_banks: ['amenity=blood_bank', 'healthcare=blood_bank'],
+    };
+
+    const tags = altTags[category] || ['amenity=hospital'];
+    const tagFilters = tags
+      .map(tag => {
+        const [key, val] = tag.split('=');
+        return val ? `node["${key}"="${val}"](around:${radius},${lat},${lon});way["${key}"="${val}"](around:${radius},${lat},${lon});` : '';
+      })
+      .join('\n');
+
+    const overpassQuery = `[out:json][timeout:25];(\n${tagFilters}\n);out center tags;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+    const responseText = await fetchHttpsJson(url);
+    const parsedData = JSON.parse(responseText);
+    res.json(parsedData);
+  } catch (error: any) {
+    console.error('Overpass proxy error:', error);
+    res.status(500).json({ error: 'Failed to fetch nearby places from Overpass API', details: error.message });
+  }
+});
+
 export default router;
