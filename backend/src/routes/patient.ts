@@ -371,4 +371,146 @@ router.get('/appointments/active', async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// GET /api/patient/profile — get complete patient details including SOS metadata
+router.get('/profile', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const result = await query(
+      `SELECT id, email, name, phone, age, gender, height, weight, pregnancy_status, blood_group, allergies, medical_history, emergency_contacts FROM users WHERE id = $1`,
+      [patientId]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch patient profile' });
+  }
+});
+
+// POST /api/patient/profile — update patient details including SOS metadata
+router.post('/profile', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const { name, phone, age, gender, height, weight, pregnancyStatus, bloodGroup, allergies, medicalHistory, emergencyContacts } = req.body;
+    
+    await query(
+      `UPDATE users 
+       SET name = $1, phone = $2, age = $3, gender = $4, height = $5, weight = $6, pregnancy_status = $7, blood_group = $8, allergies = $9, medical_history = $10, emergency_contacts = $11
+       WHERE id = $12`,
+      [
+        name, phone, age || null, gender || null, height || null, weight || null, 
+        pregnancyStatus ? 1 : 0, bloodGroup || null, allergies || null, medicalHistory || null, emergencyContacts || null,
+        patientId
+      ]
+    );
+    
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update patient profile' });
+  }
+});
+
+// GET /api/patient/wellness — retrieve history of wellness logs for progress charts
+router.get('/wellness', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const result = await query(
+      `SELECT * FROM daily_wellness WHERE patient_id = $1 ORDER BY date ASC LIMIT 30`,
+      [patientId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch wellness data' });
+  }
+});
+
+// POST /api/patient/wellness — record/update daily wellness stats
+router.post('/wellness', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const { date, sleepHours, mood, stressLevel, waterIntake, exerciseMins, weight, energyLevel, painLevel, temperature, bloodPressure, sugarLevel } = req.body;
+    
+    // Auto-calculate Daily Health Score (0-100)
+    let score = 50; // base
+    if (sleepHours >= 7 && sleepHours <= 9) score += 15;
+    else if (sleepHours > 5) score += 5;
+    
+    if (mood === 'excellent' || mood === 'happy') score += 15;
+    else if (mood === 'good') score += 10;
+    
+    if (stressLevel === 'low') score += 15;
+    else if (stressLevel === 'medium') score += 5;
+    
+    if (waterIntake >= 2.5) score += 15;
+    else if (waterIntake >= 1.5) score += 8;
+    
+    if (exerciseMins >= 30) score += 15;
+    else if (exerciseMins > 0) score += 8;
+    
+    if (energyLevel >= 4) score += 10;
+    if (painLevel <= 2) score += 10;
+    if (score > 100) score = 100;
+    if (score < 10) score = 10;
+
+    await query(
+      `INSERT INTO daily_wellness (patient_id, date, sleep_hours, mood, stress_level, water_intake, exercise_mins, weight, energy_level, pain_level, temperature, blood_pressure, sugar_level, health_score)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       ON CONFLICT (patient_id, date) DO UPDATE SET
+         sleep_hours = EXCLUDED.sleep_hours,
+         mood = EXCLUDED.mood,
+         stress_level = EXCLUDED.stress_level,
+         water_intake = EXCLUDED.water_intake,
+         exercise_mins = EXCLUDED.exercise_mins,
+         weight = EXCLUDED.weight,
+         energy_level = EXCLUDED.energy_level,
+         pain_level = EXCLUDED.pain_level,
+         temperature = EXCLUDED.temperature,
+         blood_pressure = EXCLUDED.blood_pressure,
+         sugar_level = EXCLUDED.sugar_level,
+         health_score = EXCLUDED.health_score`,
+      [
+        patientId, date, sleepHours || null, mood || null, stressLevel || null, waterIntake || null, exerciseMins || null,
+        weight || null, energyLevel || null, painLevel || null, temperature || null, bloodPressure || null, sugarLevel || null,
+        score
+      ]
+    );
+
+    res.json({ message: 'Wellness log recorded successfully', score });
+  } catch (error) {
+    console.error('Error saving wellness log:', error);
+    res.status(500).json({ error: 'Failed to record wellness log' });
+  }
+});
+
+// GET /api/patient/diet — retrieve active diet plan
+router.get('/diet', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const result = await query(
+      `SELECT * FROM diet_plans WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [patientId]
+    );
+    res.json(result.rows[0] || null);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch diet plan' });
+  }
+});
+
+// POST /api/patient/diet — create / save custom diet plan
+router.post('/diet', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const patientId = req.user?.id;
+    const { breakfast, lunch, dinner, snacks, calories, protein, carbs, fat, waterIntake, goals } = req.body;
+    
+    const result = await query(
+      `INSERT INTO diet_plans (patient_id, breakfast, lunch, dinner, snacks, calories, protein, carbs, fat, water_intake, goals)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [
+        patientId, breakfast, lunch, dinner, snacks, calories || null, protein || null, carbs || null, fat || null, waterIntake || null, goals || ''
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save diet plan' });
+  }
+});
+
 export default router;

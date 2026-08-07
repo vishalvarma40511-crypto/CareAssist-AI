@@ -338,6 +338,50 @@ async function initPostgresSchema() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Add optional columns to users in Postgres
+    try { await query("ALTER TABLE users ADD COLUMN IF NOT EXISTS blood_group VARCHAR(10)"); } catch (e) {}
+    try { await query("ALTER TABLE users ADD COLUMN IF NOT EXISTS allergies TEXT"); } catch (e) {}
+    try { await query("ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_history TEXT"); } catch (e) {}
+    try { await query("ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contacts TEXT"); } catch (e) {}
+
+    // Create Daily Wellness Table
+    await query(`CREATE TABLE IF NOT EXISTS daily_wellness (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date VARCHAR(100) NOT NULL,
+      sleep_hours REAL,
+      mood VARCHAR(100),
+      stress_level VARCHAR(100),
+      water_intake REAL,
+      exercise_mins INTEGER,
+      weight REAL,
+      energy_level INTEGER,
+      pain_level INTEGER,
+      temperature REAL,
+      blood_pressure VARCHAR(100),
+      sugar_level REAL,
+      health_score INTEGER,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(patient_id, date)
+    )`);
+
+    // Create Diet Plans Table
+    await query(`CREATE TABLE IF NOT EXISTS diet_plans (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      breakfast TEXT,
+      lunch TEXT,
+      dinner TEXT,
+      snacks TEXT,
+      calories REAL,
+      protein REAL,
+      carbs REAL,
+      fat REAL,
+      water_intake REAL,
+      goals TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     // Seed default admin user (password: password123)
     await query(`INSERT INTO users (email, password_hash, role, name, is_verified)
       VALUES ('admin@careassist.ai', '$2a$10$95XvNClKjK.Y7e6x2fB6z.kFf8Nq7tQZ4dlyX31/Z3Kk9g.p3722e', 'admin', 'System Admin', true)

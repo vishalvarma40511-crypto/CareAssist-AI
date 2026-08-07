@@ -10,6 +10,15 @@ import {
   Send, Mic, Volume2, ShieldAlert, Award, FileText, 
   Search, Shield, PhoneCall, Video, UserCheck, X
 } from 'lucide-react';
+import DailyWellness from '../components/DailyWellness';
+import MentalWellness from '../components/MentalWellness';
+import EmergencySOS from '../components/EmergencySOS';
+import NearbyServices from '../components/NearbyServices';
+import DigitalLocker from '../components/DigitalLocker';
+import PersonalizedDiet from '../components/PersonalizedDiet';
+import MedicineManager from '../components/MedicineManager';
+import AIHealthCoach from '../components/AIHealthCoach';
+import VoiceAssistant from '../components/VoiceAssistant';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -32,8 +41,7 @@ const PatientDashboard: React.FC = () => {
   const [healthRecords, setHealthRecords] = useState<any[]>([]);
   const [verifiedDoctors, setVerifiedDoctors] = useState<any[]>([]);
 
-  // Active Sub-panel views
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat_ai' | 'records' | 'booking' | 'chat_doctor' | 'report_analyzer'>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   // AI Chat States
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -545,7 +553,6 @@ const PatientDashboard: React.FC = () => {
     alert(`Prescription secure link shared!\nLink: ${apiBase.replace('/api', '')}/prescriptions/share_${activePrescription.id}`);
   };
 
-  // Check if a medication log exists for today
   const isMedTaken = (reminderId: string) => {
     return adherenceToday.some(log => log.reminder_id === reminderId && log.taken);
   };
@@ -572,7 +579,7 @@ const PatientDashboard: React.FC = () => {
       <div className="mb-8 flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <button 
           onClick={() => setActiveTab('dashboard')} 
-          className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
             activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
@@ -580,31 +587,95 @@ const PatientDashboard: React.FC = () => {
         </button>
         <button 
           onClick={() => setActiveTab('chat_ai')} 
-          className={`flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
             activeTab === 'chat_ai' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Mic className="h-4 w-4" />
           <span>{t('symptomChecker')}</span>
         </button>
-
         <button 
-          onClick={() => setActiveTab('booking')} 
-          className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
-            activeTab === 'booking' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          onClick={() => setActiveTab('wellness')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'wellness' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          Book Consultation
+          📈 Daily Vitals
+        </button>
+        <button 
+          onClick={() => setActiveTab('reminders')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'reminders' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          💊 Medicine Hub
+        </button>
+        <button 
+          onClick={() => setActiveTab('diet')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'diet' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          🥗 Diet Planner
         </button>
         <button 
           onClick={() => setActiveTab('report_analyzer')} 
-          className={`flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
             activeTab === 'report_analyzer' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <FileText className="h-4.5 w-4.5 text-brand-500" />
+          <FileText className="h-4 w-4 text-brand-500" />
           <span>{t('reportAnalyzer')}</span>
         </button>
+        <button 
+          onClick={() => setActiveTab('mental')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'mental' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          🧠 Mental Health
+        </button>
+        <button 
+          onClick={() => setActiveTab('coach')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'coach' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          ✨ Health Coach
+        </button>
+        <button 
+          onClick={() => setActiveTab('nearby')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'nearby' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          🗺️ Nearby Care
+        </button>
+        <button 
+          onClick={() => setActiveTab('locker')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'locker' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          🔒 Secure Locker
+        </button>
+        <button 
+          onClick={() => setActiveTab('booking')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'booking' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          📅 Doctor Visits
+        </button>
+        <button 
+          onClick={() => setActiveTab('emergency')} 
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+            activeTab === 'emergency' ? 'bg-rose-600 text-white shadow-md' : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20'
+          }`}
+        >
+          🚨 SOS Alert
+        </button>
+
       </div>
 
       {/* Tab: Dashboard Summary */}
@@ -1770,6 +1841,59 @@ const PatientDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Tab: Daily Vitals */}
+      {activeTab === 'wellness' && (
+        <DailyWellness apiBase={apiBase} token={token!} />
+      )}
+
+      {/* Tab: Medicine Hub */}
+      {activeTab === 'reminders' && (
+        <MedicineManager
+          apiBase={apiBase}
+          token={token!}
+          reminders={reminders}
+          adherenceToday={adherenceToday}
+          onRefresh={fetchDashboardData}
+        />
+      )}
+
+      {/* Tab: Diet Planner */}
+      {activeTab === 'diet' && (
+        <PersonalizedDiet apiBase={apiBase} token={token!} />
+      )}
+
+      {/* Tab: Mental Health */}
+      {activeTab === 'mental' && (
+        <MentalWellness />
+      )}
+
+      {/* Tab: Health Coach */}
+      {activeTab === 'coach' && (
+        <AIHealthCoach />
+      )}
+
+      {/* Tab: Nearby Care */}
+      {activeTab === 'nearby' && (
+        <NearbyServices />
+      )}
+
+      {/* Tab: Secure Locker */}
+      {activeTab === 'locker' && (
+        <DigitalLocker />
+      )}
+
+      {/* Tab: Emergency SOS */}
+      {activeTab === 'emergency' && (
+        <EmergencySOS apiBase={apiBase} token={token!} />
+      )}
+
+      {/* Voice Assistant Floating Widget */}
+      <VoiceAssistant
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onTriggerSOS={() => setTriggerEmergency(true)}
+      />
 
     </div>
   );

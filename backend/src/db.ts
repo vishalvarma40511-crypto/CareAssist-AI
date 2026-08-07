@@ -79,6 +79,10 @@ function initSqliteSchema() {
       height REAL,
       weight REAL,
       pregnancy_status BOOLEAN DEFAULT 0,
+      blood_group TEXT,
+      allergies TEXT,
+      medical_history TEXT,
+      emergency_contacts TEXT,
       is_verified BOOLEAN DEFAULT 0,
       otp_code TEXT,
       otp_expires_at TEXT,
@@ -224,12 +228,59 @@ function initSqliteSchema() {
       ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'doctor1@careassist.ai', '$2a$10$95XvNClKjK.Y7e6x2fB6z.kFf8Nq7tQZ4dlyX31/Z3Kk9g.p3722e', 'doctor', 'Dr. Sarah Connor', 1),
       ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'doctor2@careassist.ai', '$2a$10$95XvNClKjK.Y7e6x2fB6z.kFf8Nq7tQZ4dlyX31/Z3Kk9g.p3722e', 'doctor', 'Dr. John Watson', 1)`,
 
+    // Daily Wellness Logs
+    `CREATE TABLE IF NOT EXISTS daily_wellness (
+      id TEXT PRIMARY KEY DEFAULT (
+        lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr(lower(hex(randomblob(2))),1,1) || substr(lower(hex(randomblob(2))),2,3) || '-' || lower(hex(randomblob(6)))
+      ),
+      patient_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      sleep_hours REAL,
+      mood TEXT,
+      stress_level TEXT,
+      water_intake REAL,
+      exercise_mins INTEGER,
+      weight REAL,
+      energy_level INTEGER,
+      pain_level INTEGER,
+      temperature REAL,
+      blood_pressure TEXT,
+      sugar_level REAL,
+      health_score INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(patient_id, date)
+    )`,
+
+    // Diet Plans
+    `CREATE TABLE IF NOT EXISTS diet_plans (
+      id TEXT PRIMARY KEY DEFAULT (
+        lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr(lower(hex(randomblob(2))),1,1) || substr(lower(hex(randomblob(2))),2,3) || '-' || lower(hex(randomblob(6)))
+      ),
+      patient_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      breakfast TEXT,
+      lunch TEXT,
+      dinner TEXT,
+      snacks TEXT,
+      calories REAL,
+      protein REAL,
+      carbs REAL,
+      fat REAL,
+      water_intake REAL,
+      goals TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+
     `INSERT OR IGNORE INTO doctor_profiles (user_id, specialty, license_number, bio, clinic_address, consultation_fee, is_verified) VALUES
       ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'Cardiology', 'MD-992384-US', 'Experienced cardiologist specializing in heart diseases and preventative health care.', '102 Heart Health Ave, Boston, MA', 150.00, 1),
       ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'General Medicine', 'MD-118839-US', 'Family physician providing consultation for acute and chronic conditions.', '221B Baker St, London, UK', 75.00, 1)`
   ];
 
   sqliteDb!.serialize(() => {
+    // Run alters to perform simple SQLite migrations for existing users table
+    sqliteDb!.run("ALTER TABLE users ADD COLUMN blood_group TEXT", () => {});
+    sqliteDb!.run("ALTER TABLE users ADD COLUMN allergies TEXT", () => {});
+    sqliteDb!.run("ALTER TABLE users ADD COLUMN medical_history TEXT", () => {});
+    sqliteDb!.run("ALTER TABLE users ADD COLUMN emergency_contacts TEXT", () => {});
     for (const stmt of schema) {
       sqliteDb!.run(stmt, (err) => {
         if (err) {
