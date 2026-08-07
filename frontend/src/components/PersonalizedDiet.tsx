@@ -35,53 +35,25 @@ const PersonalizedDiet: React.FC<PersonalizedDietProps> = ({ apiBase, token }) =
   const generateDietPlan = async () => {
     setLoading(true);
     try {
-      // Mock generated values matching parameters
-      let breakfast = "Oatmeal with chia seeds, banana slices, and almond milk.";
-      let lunch = "Quinoa salad with mixed greens, cherry tomatoes, cucumbers, and boiled chickpeas.";
-      let dinner = "Brown rice with steamed broccoli, grilled tofu, and low-sodium soy sauce.";
-      let snacks = "Mixed unsalted nuts (walnuts & almonds) and a green apple.";
-      let calories = 1600;
-      let protein = 70;
-      let carbs = 220;
-      let fat = 50;
-      let water = 3.0;
-
-      if (goal === 'muscle_gain') {
-        breakfast = "Scrambled tofu or eggs with whole wheat toast, avocado, and spinach.";
-        lunch = "High protein lentil curry or chicken with brown rice, broccoli, and yogurt.";
-        dinner = "Paneer or grilled fish with sweet potato mash and green beans.";
-        snacks = "Protein shake with peanut butter and hemp seeds.";
-        calories = 2500;
-        protein = 130;
-        carbs = 310;
-        fat = 75;
-        water = 3.5;
-      } else if (goal === 'diabetes') {
-        breakfast = "Chia seed pudding made with unsweetened almond milk and fresh blueberries.";
-        lunch = "Spinach and kale salad with avocado, pumpkin seeds, and grilled tofu.";
-        dinner = "Steamed cauliflower mash with baked salmon or paneer and asparagus.";
-        snacks = "Cucumber slices with hummus.";
-        calories = 1400;
-        protein = 85;
-        carbs = 110;
-        fat = 65;
-        water = 3.0;
+      // 1. Request AI-generated diet plan from Gemini via backend
+      const aiRes = await fetch(`${apiBase}/ai/diet-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          goal,
+          dietType,
+          budget
+        })
+      });
+      if (!aiRes.ok) {
+        throw new Error('AI diet generation failed');
       }
+      const aiData = await aiRes.json();
 
-      if (dietType === 'non_vegetarian') {
-        if (goal === 'muscle_gain') {
-          lunch = "Grilled chicken breast with wild brown rice, sautéed spinach, and green peas.";
-          dinner = "Baked salmon fillet with sweet potato chunks and grilled zucchini.";
-        } else {
-          lunch = "Light tuna salad sandwich on multi-grain bread with lettuce and tomatoes.";
-          dinner = "Baked turkey breast with roasted bell peppers and quinoa.";
-        }
-      } else if (dietType === 'vegan') {
-        breakfast = "Tofu scramble with spinach, tomatoes, and whole grain sourdough.";
-        lunch = "Black bean and avocado salad with lime dressing and brown rice.";
-        dinner = "Lentil shepherd's pie with sweet potato mash topping.";
-      }
-
+      // 2. Save the generated plan to user profile database
       const res = await fetch(`${apiBase}/patient/diet`, {
         method: 'POST',
         headers: {
@@ -89,16 +61,16 @@ const PersonalizedDiet: React.FC<PersonalizedDietProps> = ({ apiBase, token }) =
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          breakfast,
-          lunch,
-          dinner,
-          snacks,
-          calories,
-          protein,
-          carbs,
-          fat,
-          waterIntake: water,
-          goals: `${dietType.toUpperCase()} - ${goal.toUpperCase()}`
+          breakfast: aiData.breakfast,
+          lunch: aiData.lunch,
+          dinner: aiData.dinner,
+          snacks: aiData.snacks,
+          calories: aiData.calories,
+          protein: aiData.protein,
+          carbs: aiData.carbs,
+          fat: aiData.fat,
+          waterIntake: aiData.waterIntake,
+          goals: aiData.goals || `${dietType.toUpperCase()} - ${goal.toUpperCase()}`
         })
       });
       const data = await res.json();
@@ -107,6 +79,7 @@ const PersonalizedDiet: React.FC<PersonalizedDietProps> = ({ apiBase, token }) =
       }
     } catch (err) {
       console.error(err);
+      alert('Failed to connect to Gemini AI. Running offline cache simulation.');
     } finally {
       setLoading(false);
     }

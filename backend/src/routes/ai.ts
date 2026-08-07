@@ -334,6 +334,118 @@ Your response must be valid JSON matching this schema:
   }
 });
 
+// POST /api/ai/diet-plan
+router.post('/diet-plan', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { goal, dietType, budget, language } = req.body;
+    const targetLangCode = language || 'en';
+
+    const profileRes = await query('SELECT age, weight, height, gender FROM users WHERE id = $1', [authReq.user?.id]);
+    const profile = profileRes.rows[0] || {};
+
+    const languageNames: { [key: string]: string } = {
+      en: 'English',
+      hi: 'Hindi',
+      te: 'Telugu',
+      ta: 'Tamil',
+      kn: 'Kannada',
+      ml: 'Malayalam'
+    };
+    const targetLang = languageNames[targetLangCode] || 'English';
+
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+      throw new Error('API key unconfigured');
+    }
+
+    const prompt = `
+You are a professional healthcare clinical dietitian. Generate a personalized 1-day meal plan for a patient based on these parameters:
+- Target Goal: ${goal}
+- Dietary Type: ${dietType}
+- Budget Category: ${budget}
+- Patient Vitals: Age ${profile.age || 'Unspecified'}, Weight ${profile.weight || 'Unspecified'} kg, Height ${profile.height || 'Unspecified'} cm, Gender ${profile.gender || 'Unspecified'}.
+
+You MUST write all meal descriptions and text fields in the language: ${targetLang}.
+
+Your response must be a single, valid JSON object matching exactly this schema:
+{
+  "breakfast": "Detailed breakfast recommendation with specific items",
+  "lunch": "Detailed lunch recommendation with specific items",
+  "dinner": "Detailed dinner recommendation with specific items",
+  "snacks": "Healthy snack suggestions",
+  "calories": 1800,
+  "protein": 80,
+  "carbs": 200,
+  "fat": 60,
+  "waterIntake": 3.0,
+  "goals": "Short summary phrase of targets, e.g. Low Sodium Weight Loss"
+}
+`;
+
+    const result = await generateContentWithFallback(prompt, 'application/json');
+    const responseText = result.response.text();
+    const parsed = JSON.parse(responseText);
+    res.json(parsed);
+  } catch (error: any) {
+    console.warn('Gemini diet planning error, falling back to local fallback generator:', error.message || error);
+    const { goal, dietType, budget } = req.body;
+    let breakfast = "Oatmeal with chia seeds, banana slices, and almond milk.";
+    let lunch = "Quinoa salad with mixed greens, cherry tomatoes, cucumbers, and boiled chickpeas.";
+    let dinner = "Brown rice with steamed broccoli, grilled tofu, and low-sodium soy sauce.";
+    let snacks = "Mixed unsalted nuts (walnuts & almonds) and a green apple.";
+    let calories = 1600;
+    let protein = 70;
+    let carbs = 220;
+    let fat = 50;
+    let water = 3.0;
+
+    if (goal === 'muscle_gain') {
+      breakfast = "Scrambled tofu or eggs with whole wheat toast, avocado, and spinach.";
+      lunch = "High protein lentil curry with brown rice, broccoli, and yogurt.";
+      dinner = "Paneer or grilled fish with sweet potato mash and green beans.";
+      snacks = "Protein shake with peanut butter and hemp seeds.";
+      calories = 2500;
+      protein = 130;
+      carbs = 310;
+      fat = 75;
+      water = 3.5;
+    } else if (goal === 'diabetes') {
+      breakfast = "Chia seed pudding made with unsweetened almond milk and fresh blueberries.";
+      lunch = "Spinach and kale salad with avocado, pumpkin seeds, and grilled tofu.";
+      dinner = "Steamed cauliflower mash with baked salmon or paneer and asparagus.";
+      snacks = "Cucumber slices with hummus.";
+      calories = 1400;
+      protein = 85;
+      carbs = 110;
+      fat = 65;
+      water = 3.0;
+    }
+
+    if (dietType === 'non_vegetarian') {
+      if (goal === 'muscle_gain') {
+        lunch = "Grilled chicken breast with wild brown rice, sautéed spinach, and green peas.";
+        dinner = "Baked salmon fillet with sweet potato chunks and grilled zucchini.";
+      } else {
+        lunch = "Light tuna salad sandwich on multi-grain bread with lettuce and tomatoes.";
+        dinner = "Baked turkey breast with roasted bell peppers and quinoa.";
+      }
+    }
+
+    res.json({
+      breakfast,
+      lunch,
+      dinner,
+      snacks,
+      calories,
+      protein,
+      carbs,
+      fat,
+      waterIntake: water,
+      goals: `${dietType.toUpperCase()} - ${goal.toUpperCase()} (${budget.toUpperCase()} BUDGET)`
+    });
+  }
+});
+
 // POST /api/ai/analyze-report
 router.post('/analyze-report', authenticateToken, async (req: Request, res: Response) => {
   try {
