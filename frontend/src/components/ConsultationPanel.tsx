@@ -246,7 +246,7 @@ const ConsultationPanel: React.FC<ConsultationPanelProps> = ({
             ) : (
               <div className="flex-1 relative">
                 <iframe
-                  src={`https://meet.jit.si/${jitsiRoom}#userInfo.displayName="${encodeURIComponent(user.name || 'User')}"&config.startWithAudioMuted=false&config.startWithVideoMuted=false`}
+                  src={`https://meet.jit.si/${jitsiRoom}#userInfo.displayName="${encodeURIComponent(user.name || 'User')}"&config.startWithAudioMuted=false&config.startWithVideoMuted=${appointment.type === 'voice' ? 'true' : 'false'}`}
                   allow="camera; microphone; display-capture; autoplay"
                   allowFullScreen
                   className="w-full h-full border-none"

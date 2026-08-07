@@ -302,30 +302,13 @@ const DoctorDashboard: React.FC = () => {
                     )}
                     {selectedAppt.status === 'accepted' && (
                         <>
-                          {(() => {
-                            const start = new Date(selectedAppt.appointment_date);
-                            const end = new Date(start.getTime() + 60 * 60 * 1000);
-                            const now = new Date();
-                            const isLive = now >= start && now <= end;
-                            const isSoon = now < start && (start.getTime() - now.getTime()) < 15 * 60 * 1000;
-                            return isLive ? (
-                              <button
-                                onClick={() => setActiveConsultation(selectedAppt)}
-                                className="rounded-xl px-4 py-2 text-xs font-bold text-white flex items-center gap-1 shadow-lg"
-                                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
-                              >
-                                <Video className="h-4 w-4" /> Start Consultation
-                              </button>
-                            ) : isSoon ? (
-                              <div className="rounded-xl bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 text-xs font-semibold">
-                                ⏰ Slot in {Math.ceil((start.getTime() - now.getTime()) / 60000)} min
-                              </div>
-                            ) : (
-                              <div className="rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 px-4 py-2 text-xs font-semibold">
-                                🔒 Opens at {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            );
-                          })()}
+                          <button
+                            onClick={() => setActiveConsultation(selectedAppt)}
+                            className="rounded-xl px-4 py-2 text-xs font-bold text-white flex items-center gap-1 shadow-lg"
+                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                          >
+                            <Video className="h-4 w-4" /> Start Consultation
+                          </button>
                           <button 
                             onClick={() => handleUpdateStatus(selectedAppt.id, 'completed')}
                             className="rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
@@ -371,27 +354,7 @@ const DoctorDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Chronic diseases & Allergies */}
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Registered Allergies & Diagnoses</h4>
-                      {patientHistory.records.length === 0 ? (
-                        <p className="text-xs text-secondary">None declared by patient.</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {patientHistory.records.map((r: any) => (
-                            <span 
-                              key={r.id}
-                              className={`rounded-full px-3 py-1 text-xs font-bold ${
-                                r.type === 'allergy' ? 'bg-red-50 text-red-700' :
-                                r.type === 'chronic_disease' ? 'bg-orange-50 text-orange-700' : 'bg-slate-100 text-slate-700'
-                              }`}
-                            >
-                              {r.title} ({r.type.replace('_', ' ')})
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+
 
                     {/* Past AI Assessment summary logs */}
                     <div>

@@ -587,14 +587,7 @@ const PatientDashboard: React.FC = () => {
           <Mic className="h-4 w-4" />
           <span>{t('symptomChecker')}</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('records')} 
-          className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
-            activeTab === 'records' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          {t('healthRecords')}
-        </button>
+
         <button 
           onClick={() => setActiveTab('booking')} 
           className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
@@ -802,34 +795,17 @@ const PatientDashboard: React.FC = () => {
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{appt.specialty}</p>
                       <p className="text-xs text-secondary mt-1">{new Date(appt.appointment_date).toLocaleString()}</p>
                       
-                      {appt.status === 'accepted' && (() => {
-                        const start = new Date(appt.appointment_date);
-                        const end = new Date(start.getTime() + 60 * 60 * 1000);
-                        const now = new Date();
-                        const isLive = now >= start && now <= end;
-                        const isSoon = now < start && (start.getTime() - now.getTime()) < 15 * 60 * 1000;
-                        return (
-                          <div className="mt-3 flex flex-col gap-2">
-                            {isLive ? (
-                              <button
-                                onClick={() => setActiveConsultation(appt)}
-                                className="flex items-center justify-center gap-2 w-full rounded-xl py-2 text-xs font-bold text-white shadow-lg transition-all animate-pulse-slow"
-                                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
-                              >
-                                <Video className="h-3.5 w-3.5" /> Join Consultation Now
-                              </button>
-                            ) : isSoon ? (
-                              <div className="flex items-center justify-center gap-1.5 w-full rounded-xl py-2 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800">
-                                ⏰ Opens in {Math.ceil((start.getTime() - now.getTime()) / 60000)} min
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center gap-1.5 w-full rounded-xl py-2 text-xs font-semibold bg-slate-50 text-slate-500 border border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
-                                🔒 Chat opens at {new Date(appt.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      {appt.status === 'accepted' && (
+                        <div className="mt-3 flex flex-col gap-2">
+                          <button
+                            onClick={() => setActiveConsultation(appt)}
+                            className="flex items-center justify-center gap-2 w-full rounded-xl py-2 text-xs font-bold text-white shadow-lg transition-all animate-pulse-slow"
+                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                          >
+                            <Video className="h-3.5 w-3.5" /> Join Consultation Now
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1208,88 +1184,7 @@ const PatientDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Tab: Health Records manager */}
-      {activeTab === 'records' && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          
-          {/* Left panel: Add health record form */}
-          <div>
-            <div className="glass-panel rounded-3xl p-6 shadow-md">
-              <h3 className="text-lg font-bold text-primary mb-4">Add Health Record</h3>
-              <form onSubmit={handleAddRecord} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Record Type</label>
-                  <select 
-                    value={recordType}
-                    onChange={e => setRecordType(e.target.value as any)}
-                    className="w-full rounded-xl border border-slate-200 bg-white/50 px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                  >
-                    <option value="allergy">Allergy</option>
-                    <option value="chronic_disease">Chronic Disease</option>
-                    <option value="vaccination">Vaccination Record</option>
-                    <option value="lab_report">Lab Report Metadata</option>
-                    <option value="note">Doctor Note / Personal Log</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Title</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={recordTitle}
-                    onChange={e => setRecordTitle(e.target.value)}
-                    placeholder="e.g. Peanut Allergy, Diabetes, COVID-19 Vaccine"
-                    className="w-full rounded-xl border border-slate-200 bg-white/50 px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Details / Description</label>
-                  <textarea 
-                    value={recordDesc}
-                    onChange={e => setRecordDesc(e.target.value)}
-                    rows={4}
-                    placeholder="Add details, notes or measurement metrics here..."
-                    className="w-full rounded-xl border border-slate-200 bg-white/50 px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                  ></textarea>
-                </div>
-
-                <button type="submit" className="w-full rounded-xl bg-brand-600 py-2.5 text-xs font-bold text-white hover:bg-brand-700">
-                  Save Health Record
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Right panel: Active records history */}
-          <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-lg font-bold text-primary">Your Electronic Health Folder</h3>
-            
-            {healthRecords.length === 0 ? (
-              <p className="text-xs text-secondary">No records entered. Document allergies, chronic illnesses, or vaccination entries for personalized AI recommendations.</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {healthRecords.map(rec => (
-                  <div key={rec.id} className="glass-panel rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${
-                        rec.type === 'allergy' ? 'bg-red-100 text-red-700' :
-                        rec.type === 'chronic_disease' ? 'bg-orange-100 text-orange-700' :
-                        rec.type === 'vaccination' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'
-                      }`}>{rec.type.replace('_', ' ')}</span>
-                      <span className="text-[10px] text-secondary">{new Date(rec.date_recorded).toLocaleDateString()}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-primary mb-1">{rec.title}</h4>
-                    <p className="text-xs text-secondary">{rec.description || 'No description provided.'}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-      )}
+      {/* Tab: Health Records manager (REMOVED) */}
 
       {/* Tab: Doctor Consultation Bookings */}
       {activeTab === 'booking' && (
@@ -1728,14 +1623,28 @@ const PatientDashboard: React.FC = () => {
             
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => setIsCallingDoctor('voice')}
+                onClick={() => {
+                  const appt = appointments.find(a => a.doctor_id === activeDoctorChatId && a.status === 'accepted');
+                  if (appt) {
+                    setActiveConsultation({ ...appt, type: 'voice' });
+                  } else {
+                    alert("Please book a consultation first to start a call.");
+                  }
+                }}
                 className="rounded-full bg-slate-800 p-2 hover:bg-slate-700 text-green-400"
                 title="Voice Call Doctor"
               >
                 <PhoneCall className="h-4 w-4" />
               </button>
               <button 
-                onClick={() => setIsCallingDoctor('video')}
+                onClick={() => {
+                  const appt = appointments.find(a => a.doctor_id === activeDoctorChatId && a.status === 'accepted');
+                  if (appt) {
+                    setActiveConsultation({ ...appt, type: 'video' });
+                  } else {
+                    alert("Please book a consultation first to start a call.");
+                  }
+                }}
                 className="rounded-full bg-slate-800 p-2 hover:bg-slate-700 text-brand-400"
                 title="Video Call Doctor"
               >
@@ -1746,18 +1655,6 @@ const PatientDashboard: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* Voice/Video mock dial overlays */}
-          {isCallingDoctor && (
-            <div className="bg-brand-950/90 text-white p-6 text-center space-y-4 animate-pulse border-b border-slate-800 flex flex-col items-center">
-              <PhoneCall className="h-10 w-10 text-green-400 animate-bounce" />
-              <h3 className="font-bold">Placing secure telehealth {isCallingDoctor} link...</h3>
-              <p className="text-xs text-slate-300">Clinician verification check in progress. Please ensure microphone permissions are authorized.</p>
-              <button onClick={() => setIsCallingDoctor(null)} className="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded-lg text-xs font-semibold">
-                Cancel Link
-              </button>
-            </div>
-          )}
 
           {/* Messages body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20">
