@@ -10,8 +10,6 @@ import {
   Send, Mic, Volume2, ShieldAlert, Award, FileText, 
   Search, Shield, PhoneCall, Video, UserCheck, X
 } from 'lucide-react';
-import DailyWellness from '../components/DailyWellness';
-import MentalWellness from '../components/MentalWellness';
 import EmergencySOS from '../components/EmergencySOS';
 import NearbyServices from '../components/NearbyServices';
 import DigitalLocker from '../components/DigitalLocker';
@@ -595,20 +593,12 @@ const PatientDashboard: React.FC = () => {
           <span>{t('symptomChecker')}</span>
         </button>
         <button 
-          onClick={() => setActiveTab('wellness')} 
-          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'wellness' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          📈 Daily Vitals
-        </button>
-        <button 
           onClick={() => setActiveTab('reminders')} 
           className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
             activeTab === 'reminders' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          💊 Medicine Hub
+          Pills Tracker
         </button>
         <button 
           onClick={() => setActiveTab('diet')} 
@@ -627,14 +617,7 @@ const PatientDashboard: React.FC = () => {
           <FileText className="h-4 w-4 text-brand-500" />
           <span>{t('reportAnalyzer')}</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('mental')} 
-          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'mental' ? 'bg-brand-600 text-white shadow-md' : 'text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          🧠 Mental Health
-        </button>
+
         <button 
           onClick={() => setActiveTab('coach')} 
           className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
@@ -1842,10 +1825,7 @@ const PatientDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Tab: Daily Vitals */}
-      {activeTab === 'wellness' && (
-        <DailyWellness apiBase={apiBase} token={token!} />
-      )}
+
 
       {/* Tab: Medicine Hub */}
       {activeTab === 'reminders' && (
@@ -1863,10 +1843,7 @@ const PatientDashboard: React.FC = () => {
         <PersonalizedDiet apiBase={apiBase} token={token!} />
       )}
 
-      {/* Tab: Mental Health */}
-      {activeTab === 'mental' && (
-        <MentalWellness />
-      )}
+
 
       {/* Tab: Health Coach */}
       {activeTab === 'coach' && (
