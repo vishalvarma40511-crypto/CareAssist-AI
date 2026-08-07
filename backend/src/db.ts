@@ -1,7 +1,6 @@
 import { Pool } from 'pg';
 import sqlite3 from 'sqlite3';
 import path from 'path';
-import fs from 'fs';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -17,25 +16,20 @@ function initializeSqlite() {
   if (sqliteDb) return;
   
   const dbPath = path.resolve(__dirname, '../database.sqlite');
-  const dbExists = fs.existsSync(dbPath);
-  
   console.log(`Using local SQLite database at: ${dbPath}`);
+  
   sqliteDb = new sqlite3.Database(dbPath, (err) => {
     if (err) {
       console.error('Failed to connect to SQLite database:', err);
     } else {
       console.log('SQLite database connected successfully');
-      // Enable foreign key support
-      sqliteDb?.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
-        if (pragmaErr) {
-          console.error('Failed to enable foreign keys in SQLite:', pragmaErr);
-        }
-      });
-      
-      // Auto-initialize schema if DB is newly created
-      if (!dbExists) {
+      // Serialize ensures PRAGMA runs before ANY subsequent queries
+      sqliteDb!.serialize(() => {
+        sqliteDb!.run('PRAGMA foreign_keys = OFF;'); // Disable during schema init to avoid ordering issues
+        sqliteDb!.run('PRAGMA journal_mode = WAL;');  // Better concurrent write performance
         initSqliteSchema();
-      }
+        sqliteDb!.run('PRAGMA foreign_keys = ON;');  // Re-enable after schema is ready
+      });
     }
   });
 }
@@ -276,19 +270,19 @@ function initSqliteSchema() {
   ];
 
   sqliteDb!.serialize(() => {
-    // Run alters to perform simple SQLite migrations for existing users table
+    // Always attempt migrations (ALTER TABLE is idempotent via errors we ignore)
     sqliteDb!.run("ALTER TABLE users ADD COLUMN blood_group TEXT", () => {});
     sqliteDb!.run("ALTER TABLE users ADD COLUMN allergies TEXT", () => {});
     sqliteDb!.run("ALTER TABLE users ADD COLUMN medical_history TEXT", () => {});
     sqliteDb!.run("ALTER TABLE users ADD COLUMN emergency_contacts TEXT", () => {});
     for (const stmt of schema) {
       sqliteDb!.run(stmt, (err) => {
-        if (err) {
-          console.error(`Error executing schema statement: ${stmt.substring(0, 50)}...`, err);
+        if (err && !err.message.includes('already exists') && !err.message.includes('duplicate column')) {
+          console.error(`Schema error: ${stmt.substring(0, 60)}...`, err.message);
         }
       });
     }
-    console.log('SQLite database schema initialization complete.');
+    console.log('SQLite schema initialization complete.');
   });
 }
 

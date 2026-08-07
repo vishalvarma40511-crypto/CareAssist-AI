@@ -251,10 +251,29 @@ router.get('/doctors', async (req: AuthenticatedRequest, res: Response) => {
 router.post('/appointments', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { doctorId, appointmentDate, type, reason } = appointmentSchema.parse(req.body);
+    const patientId = req.user?.id;
+
+    // Verify that both the doctor and patient exist in the current database
+    const doctorCheck = await query(
+      `SELECT id FROM users WHERE id = $1 AND role = 'doctor'`,
+      [doctorId]
+    );
+    if (!doctorCheck || doctorCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Selected doctor not found. Please refresh the page and try again.' });
+    }
+
+    const patientCheck = await query(
+      `SELECT id FROM users WHERE id = $1 AND role = 'patient'`,
+      [patientId]
+    );
+    if (!patientCheck || patientCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Patient account not found. Please re-login.' });
+    }
+
     const result = await query(
       `INSERT INTO appointments (patient_id, doctor_id, appointment_date, type, reason, status)
        VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *`,
-      [req.user?.id, doctorId, appointmentDate, type, reason || '']
+      [patientId, doctorId, appointmentDate, type, reason || '']
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
