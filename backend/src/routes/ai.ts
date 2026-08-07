@@ -10,6 +10,33 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 // Initialize Gemini Client
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+// Helper function to call Gemini API with model fallbacks to bypass quota constraints on specific models
+async function generateContentWithFallback(
+  promptOrContents: any,
+  responseMimeType?: string
+) {
+  const models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const modelName of models) {
+    try {
+      console.log(`Attempting generation with model: ${modelName}`);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: responseMimeType ? { responseMimeType } : undefined
+      });
+      const result = await model.generateContent(promptOrContents);
+      console.log(`Success with model: ${modelName}`);
+      return result;
+    } catch (err: any) {
+      console.warn(`Failed with model ${modelName}:`, err.message || err);
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+
 // Schema for symptom assessment
 const symptomRequestSchema = z.object({
   chatHistory: z.array(z.object({
@@ -30,13 +57,6 @@ router.post('/assess-symptoms', authenticateToken, async (req: Request, res: Res
       // Mock system if API key isn't provided so it runs correctly in debug environments
       return handleMockAISymptoms(res, chatHistory, currentMessage, targetLangCode);
     }
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
 
     const userProfileRes = await query(
       'SELECT name, age, gender, height, weight, pregnancy_status FROM users WHERE id = $1',
@@ -74,6 +94,7 @@ You MUST conduct the conversation, generate questions, suggested options, possib
 
 RULES:
 0. VOCABULARY CLARIFICATION: When the user or system refers to "tablets", it STRICTLY means medical pills/medications. NEVER provide information about electronic devices (like iPads or Android tablets).
+0b. TABLET/MEDICINE INFO REQUEST: If the user is asking for general information, details, dosage, usage, side effects, or explanation about a specific tablet or medication (e.g. "what is paracetamol", "tell me about amoxicillin tablet", "what does metformin do", "how to take pan-d"), you MUST bypass the symptom assessment. Immediately set "needsMoreInfo": false, write a comprehensive explanation of the tablet in "medicineGuidance" or "summary", and populate "prescriptions" with details of that tablet (dosage, frequency, purpose, etc.).
 1. EMERGENCY DETECTION: First, analyze the latest user message and history for immediate life-threatening signs:
    - Chest pain or pressure
    - Sudden weakness, numbness, drooping face, or slurred speech (signs of stroke)
@@ -85,7 +106,7 @@ RULES:
    - Suicidal thoughts
    If any of these are detected, you MUST immediately output JSON with "emergency": true.
 
-2. DATA COLLECTION via MULTIPLE CHOICE: If it's NOT an emergency, you MUST gather complete information by asking multiple-choice questions before giving any analysis or recommendations.
+2. DATA COLLECTION via MULTIPLE CHOICE: If it's NOT an emergency and NOT a direct tablet/medicine information request, you MUST gather complete information by asking multiple-choice questions before giving any analysis or recommendations.
    - You MUST ask ONLY ONE question at a time.
    - You MUST provide 2 to 4 options for the user to choose from in the "options" array.
    - Check if you have sufficient details on:
@@ -138,7 +159,7 @@ JSON Schema Output:
       { role: 'user', parts: [{ text: currentMessage }] }
     ];
 
-    const result = await model.generateContent({ contents });
+    const result = await generateContentWithFallback({ contents }, 'application/json');
     const responseText = result.response.text();
     const resultJson = JSON.parse(responseText);
 
@@ -182,13 +203,6 @@ router.post('/explain-medicine', authenticateToken, async (req: Request, res: Re
       return handleMockMedicineExplain(res, medicineName, targetLangCode);
     }
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
-
     const languageNames: { [key: string]: string } = {
       en: 'English',
       hi: 'Hindi',
@@ -231,7 +245,7 @@ JSON Schema Output:
 }
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, 'application/json');
     const responseText = result.response.text();
     res.json(JSON.parse(responseText));
   } catch (error: any) {
@@ -263,13 +277,6 @@ router.post('/nutrition-plan', authenticateToken, async (req: Request, res: Resp
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
       return handleMockNutrition(res, profile, chronicDiseases, allergies, targetLangCode);
     }
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
 
     const languageNames: { [key: string]: string } = {
       en: 'English',
@@ -304,7 +311,7 @@ Your response must be valid JSON matching this schema:
 }
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, 'application/json');
     const responseText = result.response.text();
     res.json(JSON.parse(responseText));
   } catch (error: any) {
@@ -340,13 +347,6 @@ router.post('/analyze-report', authenticateToken, async (req: Request, res: Resp
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
       return handleMockReportAnalysis(res, reportText, filename || 'report.txt', targetLangCode);
     }
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
 
     const languageNames: { [key: string]: string } = {
       en: 'English',
@@ -397,7 +397,7 @@ LANGUAGE REQUIREMENT:
 You MUST write all titles, findings, interpretations, problems, foods, prescriptions, and guidance entirely in the language: ${targetLang}.
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt, 'application/json');
     const responseText = result.response.text();
     res.json(JSON.parse(responseText));
   } catch (error: any) {
@@ -413,139 +413,110 @@ You MUST write all titles, findings, interpretations, problems, foods, prescript
 
 // Mock Logic for Local Testing / No API Key
 function getMockPrescriptions(text: string, lang: string) {
-  const isFever = text.includes('fever') || text.includes('temp') || text.includes('warm') || text.includes('జ్వరం') || text.includes('బుఖార్') || text.includes('बुखार');
-  const isHeadache = text.includes('head') || text.includes('migraine') || text.includes('తలనొప్పి') || text.includes('सिरदर्द') || text.includes('सिर दर्द');
-  const isCoughColdSoreThroat = text.includes('cough') || text.includes('cold') || text.includes('throat') || text.includes('దగ్గు') || text.includes('జలుబు') || text.includes('గొంతు') || text.includes('खांसी') || text.includes('जुकाम') || text.includes('गले');
-  const isStomach = text.includes('stomach') || text.includes('cramp') || text.includes('abdomen') || text.includes('కడుపు') || text.includes('पेट');
-  const isNauseaVomiting = text.includes('vomit') || text.includes('nausea') || text.includes('వాంతి') || text.includes('వికారం') || text.includes('उल्टी') || text.includes('जी मिचलाना');
-  const isBreath = text.includes('breath') || text.includes('shortness') || text.includes('శ్వాస') || text.includes('सांस');
+  const isFever = text.includes('fever') || text.includes('temp') || text.includes('warm') || text.includes('bukhar');
+  const isHeadache = text.includes('head') || text.includes('migraine') || text.includes('sir') || text.includes('dard');
+  const isCoughColdSoreThroat = text.includes('cough') || text.includes('cold') || text.includes('throat') || text.includes('cough') || text.includes('sardi');
+  const isStomach = text.includes('stomach') || text.includes('cramp') || text.includes('abdomen') || text.includes('pet');
+  const isNauseaVomiting = text.includes('vomit') || text.includes('nausea') || text.includes('ulti');
+  const isBreath = text.includes('breath') || text.includes('shortness');
 
-  if (lang === 'te') {
-    if (isFever) {
-      return [
-        { name: "పారాసెటమాల్ (Paracetamol)", dosage: "500mg", frequency: "రోజుకు 3 సార్లు (ఆహారం తర్వాత)", duration: "3 రోజులు", purpose: "జ్వరం మరియు ఒంటి నొప్పులను తగ్గించడానికి" },
-        { name: "ఓఆర్ఎస్ (ORS)", dosage: "1 ప్యాకెట్", frequency: "1 లీటర్ నీటిలో కలిపి రోజంతా త్రాగాలి", duration: "2 రోజులు", purpose: "డీహైడ్రేషన్ తగ్గించడానికి మరియు శరీర లవణాలను పునరుద్ధరించడానికి" }
-      ];
-    }
-    if (isHeadache) {
-      return [
-        { name: "ఐబుప్రోఫెన్ (Ibuprofen)", dosage: "400mg", frequency: "రోజుకు రెండు సార్లు (ఆహారం తర్వాత)", duration: "2 రోజులు", purpose: "తీవ్రమైన తలనొప్పిని తగ్గించడానికి" },
-        { name: "మెగ్నీషియం కాంప్లెక్స్ (Magnesium)", dosage: "250mg", frequency: "రోజుకు ఒకసారి పడుకునే ముందు", duration: "5 రోజులు", purpose: "నరాల ఒత్తిడిని తగ్గించి తలనొప్పి రాకుండా చేయడానికి" }
-      ];
-    }
-    if (isCoughColdSoreThroat) {
-      return [
-        { name: "సెటిరిజైన్ (Cetirizine)", dosage: "10mg", frequency: "రాత్రి పడుకునే ముందు ఒక టాబ్లెట్", duration: "3 రోజులు", purpose: "జలుబు, ముక్కు కారడం మరియు అలెర్జీ తగ్గించడానికి" },
-        { name: "దగ్గు సిరప్ (Cough Syrup)", dosage: "10ml", frequency: "రోజుకు 3 సార్లు (గోరువెచ్చని నీటితో)", duration: "4 రోజులు", purpose: "పొడి దగ్గును తగ్గించడానికి మరియు ఉపశమనం కోసం" }
-      ];
-    }
-    if (isStomach) {
-      return [
-        { name: "డిసైక్లోమైన్ (Dicyclomine)", dosage: "20mg", frequency: "నొప్పి ఉన్నప్పుడు మాత్రమే (ఆహారం తర్వాత)", duration: "2 రోజులు", purpose: "కడుపు నొప్పి మరియు శూల నొప్పుల నుండి ఉపశమనానికి" },
-        { name: "పాంటోప్రజోల్ (Pantoprazole)", dosage: "40mg", frequency: "ఉదయం పరిగడుపున (ఆహారానికి 30 నిమిషాల ముందు)", duration: "5 రోజులు", purpose: "కడుపులో మంట, అసిడిటీ మరియు గ్యాస్ తగ్గించడానికి" }
-      ];
-    }
-    if (isNauseaVomiting) {
-      return [
-        { name: "డోంపెరిడోన్ (Domperidone)", dosage: "10mg", frequency: "భోజనానికి 15 నిమిషాల ముందు (అవసరమైతే)", duration: "3 రోజులు", purpose: "వాంతులు మరియు వికారం తగ్గించడానికి" },
-        { name: "ఓఆర్ఎస్ (ORS)", dosage: "1 ప్యాకెట్", frequency: "1 లీటర్ నీటిలో కలిపి త్రాగాలి", duration: "2 రోజులు", purpose: "వాంతుల వల్ల కోల్పోయిన నీటిని మరియు లవణాలను భర్తీ చేయడానికి" }
-      ];
-    }
-    if (isBreath) {
-      return [
-        { name: "సాల్బుటమాల్ ఇన్హేలర్ (Salbutamol Inhaler)", dosage: "100mcg", frequency: "ఆయాసం వచ్చినప్పుడు 1-2 పఫ్స్", duration: "అవసరమైన మేరకు", purpose: "శ్వాస మార్గాలను తెరిచి శ్వాస తీసుకోవడం సులభతరం చేయడానికి" }
-      ];
-    }
+  if (isFever) {
     return [
-      { name: "మల్టీవిటమిన్ టాబ్లెట్ (Multivitamin)", dosage: "1 టాబ్లెట్", frequency: "రోజుకు ఒకసారి ఉదయం భోజనం తర్వాత", duration: "10 రోజులు", purpose: "శరీరంలో రోగనిరోధక శక్తిని పెంచడానికి" }
-    ];
-  } else if (lang === 'hi') {
-    if (isFever) {
-      return [
-        { name: "पैरासिटामोल (Paracetamol)", dosage: "500mg", frequency: "दिन में 3 बार (खाने के बाद)", duration: "3 दिन", purpose: "बुखार और बदन दर्द को कम करने के लिए" },
-        { name: "ओआरएस (ORS)", dosage: "1 पैकेट", frequency: "1 लीटर पानी में घोलकर दिनभर पिएं", duration: "2 दिन", purpose: "डीहाइड्रेशन दूर करने और इलेक्ट्रोलाइट्स संतुलित करने के लिए" }
-      ];
-    }
-    if (isHeadache) {
-      return [
-        { name: "आइबूप्रोफेन (Ibuprofen)", dosage: "400mg", frequency: "दिन में 2 बार (खाने के बाद)", duration: "2 दिन", purpose: "तेज सिरदर्द और सूजन को कम करने के लिए" },
-        { name: "मैग्नीशियम (Magnesium)", dosage: "250mg", frequency: "दिन में एक बार सोने से पहले", duration: "5 दिन", purpose: "मांसपेशियों और नसों के तनाव को कम करने के लिए" }
-      ];
-    }
-    if (isCoughColdSoreThroat) {
-      return [
-        { name: "सिट्रीजिन (Cetirizine)", dosage: "10mg", frequency: "रात को सोने से पहले एक गोली", duration: "3 दिन", purpose: "जुकाम, बहती नाक और गले की खुजली से राहत के लिए" },
-        { name: "कफ सिरप (Cough Syrup)", dosage: "10ml", frequency: "दिन में 3 बार (गुनगुने पानी के साथ)", duration: "4 दिन", purpose: "खांसी को कम करने और गले को आराम देने के लिए" }
-      ];
-    }
-    if (isStomach) {
-      return [
-        { name: "डाइसाइक्लोमाइन (Dicyclomine)", dosage: "20mg", frequency: "दर्द होने पर ही (खाने के बाद)", duration: "2 दिन", purpose: "पेट दर्द और मरोड़ से तुरंत राहत के लिए" },
-        { name: "पेंटाप्राजोल (Pantoprazole)", dosage: "40mg", frequency: "सुबह खाली पेट (खाने से 30 मिनट पहले)", duration: "5 दिन", purpose: "एसिडिटी, पेट की गैस और सीने की जलन को कम करने के लिए" }
-      ];
-    }
-    if (isNauseaVomiting) {
-      return [
-        { name: "डोमपेरिडोन (Domperidone)", dosage: "10mg", frequency: "भोजन से 15 मिनट पहले (आवश्यकतानुसार)", duration: "3 दिन", purpose: "उल्टी और जी मिचलाना रोकने के लिए" },
-        { name: "ओआरएस (ORS)", dosage: "1 पैकेट", frequency: "1 लीटर पानी में घोलकर पिएं", duration: "2 दिन", purpose: "उल्टी के कारण शरीर में पानी की कमी दूर करने के लिए" }
-      ];
-    }
-    if (isBreath) {
-      return [
-        { name: "साल्बुटामोल इनहेलर (Salbutamol Inhaler)", dosage: "100mcg", frequency: "सांस फूलने पर 1-2 कश (Puffs)", duration: "आवश्यकतानुसार", purpose: "श्वसन मार्ग को खोलकर सांस लेना आसान बनाने के लिए" }
-      ];
-    }
-    return [
-      { name: "मल्टीविटामिन (Multivitamin)", dosage: "1 गोली", frequency: "दिन में एक बार नाश्ते के बाद", duration: "10 दिन", purpose: "शारीरिक कमजोरी दूर करने और इम्युनिटी बढ़ाने के लिए" }
-    ];
-  } else {
-    // English default
-    if (isFever) {
-      return [
-        { name: "Paracetamol", dosage: "500mg", frequency: "1 tablet every 6 hours (after food)", duration: "3 days", purpose: "To reduce fever and relieve body aches" },
-        { name: "ORS (Oral Rehydration Salts)", dosage: "1 sachet", frequency: "Dissolved in 1L water, drink throughout the day", duration: "2 days", purpose: "To cure dehydration and restore body electrolytes" }
-      ];
-    }
-    if (isHeadache) {
-      return [
-        { name: "Ibuprofen", dosage: "400mg", frequency: "1 tablet twice a day (after food)", duration: "2 days", purpose: "To relieve severe headache pain and reduce tension" },
-        { name: "Magnesium Complex", dosage: "250mg", frequency: "Once daily before sleep", duration: "5 days", purpose: "To relax blood vessels and prevent muscle contraction headache" }
-      ];
-    }
-    if (isCoughColdSoreThroat) {
-      return [
-        { name: "Cetirizine", dosage: "10mg", frequency: "1 tablet at bedtime", duration: "3 days", purpose: "To relieve cold symptoms, runny nose, and allergies" },
-        { name: "Cough Syrup", dosage: "10ml", frequency: "3 times daily", duration: "4 days", purpose: "To soothe throat irritation and relieve cough" }
-      ];
-    }
-    if (isStomach) {
-      return [
-        { name: "Dicyclomine", dosage: "20mg", frequency: "1 tablet when pain occurs (after food)", duration: "2 days", purpose: "To relieve abdominal cramps and bowel muscle spasms" },
-        { name: "Pantoprazole", dosage: "40mg", frequency: "Once daily in morning (30 mins before breakfast)", duration: "5 days", purpose: "To reduce stomach acidity, gas, and heartburn" }
-      ];
-    }
-    if (isNauseaVomiting) {
-      return [
-        { name: "Domperidone", dosage: "10mg", frequency: "1 tablet 15 mins before meals (as needed)", duration: "3 days", purpose: "To stop vomiting and prevent nausea sensations" },
-        { name: "ORS (Oral Rehydration Salts)", dosage: "1 sachet", frequency: "Dissolved in 1L water, drink as needed", duration: "2 days", purpose: "To restore body fluids lost due to vomiting" }
-      ];
-    }
-    if (isBreath) {
-      return [
-        { name: "Salbutamol Inhaler", dosage: "100mcg", frequency: "1-2 puffs as needed during distress", duration: "As needed", purpose: "To widen airways and ease breathing" }
-      ];
-    }
-    return [
-      { name: "Multivitamin", dosage: "1 tablet", frequency: "Once daily after morning breakfast", duration: "10 days", purpose: "To boost general immune recovery" }
+      { name: "Paracetamol", dosage: "500mg", frequency: "1 tablet every 6 hours (after food)", duration: "3 days", purpose: "To reduce fever and relieve body aches" },
+      { name: "ORS (Oral Rehydration Salts)", dosage: "1 sachet", frequency: "Dissolved in 1L water, drink throughout the day", duration: "2 days", purpose: "To cure dehydration and restore body electrolytes" }
     ];
   }
+  if (isHeadache) {
+    return [
+      { name: "Ibuprofen", dosage: "400mg", frequency: "1 tablet twice a day (after food)", duration: "2 days", purpose: "To relieve severe headache pain and reduce tension" },
+      { name: "Magnesium Complex", dosage: "250mg", frequency: "Once daily before sleep", duration: "5 days", purpose: "To relax blood vessels and prevent muscle contraction headache" }
+    ];
+  }
+  if (isCoughColdSoreThroat) {
+    return [
+      { name: "Cetirizine", dosage: "10mg", frequency: "1 tablet at bedtime", duration: "3 days", purpose: "To relieve cold symptoms, runny nose, and allergies" },
+      { name: "Cough Syrup", dosage: "10ml", frequency: "3 times daily", duration: "4 days", purpose: "To soothe throat irritation and relieve cough" }
+    ];
+  }
+  if (isStomach) {
+    return [
+      { name: "Dicyclomine", dosage: "20mg", frequency: "1 tablet when pain occurs (after food)", duration: "2 days", purpose: "To relieve abdominal cramps and bowel muscle spasms" },
+      { name: "Pantoprazole", dosage: "40mg", frequency: "Once daily in morning (30 mins before breakfast)", duration: "5 days", purpose: "To reduce stomach acidity, gas, and heartburn" }
+    ];
+  }
+  if (isNauseaVomiting) {
+    return [
+      { name: "Domperidone", dosage: "10mg", frequency: "1 tablet 15 mins before meals (as needed)", duration: "3 days", purpose: "To stop vomiting and prevent nausea sensations" },
+      { name: "ORS (Oral Rehydration Salts)", dosage: "1 sachet", frequency: "Dissolved in 1L water, drink as needed", duration: "2 days", purpose: "To restore body fluids lost due to vomiting" }
+    ];
+  }
+  if (isBreath) {
+    return [
+      { name: "Salbutamol Inhaler", dosage: "100mcg", frequency: "1-2 puffs as needed during distress", duration: "As needed", purpose: "To widen airways and ease breathing" }
+    ];
+  }
+  return [
+    { name: "Multivitamin", dosage: "1 tablet", frequency: "Once daily after morning breakfast", duration: "10 days", purpose: "To boost general immune recovery" }
+  ];
 }
 
 function handleMockAISymptoms(res: Response, chatHistory: any[], msg: string, lang: string = 'en') {
   const text = msg.toLowerCase();
-  
+
+  // Check if it's a query about a tablet/medicine
+  const isTabletQuery = text.includes('tablet') || text.includes('medicine') || text.includes('pill') || 
+                        text.includes('paracetamol') || text.includes('amoxicillin') || text.includes('metformin') || 
+                        text.includes('cetirizine') || text.includes('pantoprazole') || text.includes('dolo') || 
+                        text.includes('crocin') || text.includes('ibuprofen') || text.includes('aspirin');
+
+  if (isTabletQuery) {
+    // Extract medicine name from msg
+    let detectedMed = "Medicine";
+    if (text.includes('paracetamol') || text.includes('dolo') || text.includes('crocin')) detectedMed = "Paracetamol";
+    else if (text.includes('amoxicillin')) detectedMed = "Amoxicillin";
+    else if (text.includes('metformin')) detectedMed = "Metformin";
+    else if (text.includes('cetirizine')) detectedMed = "Cetirizine";
+    else if (text.includes('pantoprazole') || text.includes('pan-d')) detectedMed = "Pantoprazole";
+    else if (text.includes('ibuprofen')) detectedMed = "Ibuprofen";
+    else if (text.includes('aspirin')) detectedMed = "Aspirin";
+    else {
+      const words = msg.split(/\s+/);
+      const tabletIdx = words.findIndex(w => w.toLowerCase().includes('tablet') || w.toLowerCase().includes('medicine'));
+      if (tabletIdx > 0) {
+        detectedMed = words[tabletIdx - 1];
+      } else if (words.length > 0) {
+        detectedMed = words[words.length - 1].replace(/[?.!]/g, '');
+      }
+    }
+    
+    // Capitalize first letter
+    detectedMed = detectedMed.charAt(0).toUpperCase() + detectedMed.slice(1);
+
+    const prescs = getMockPrescriptions(text, lang);
+    const summaryText = "Here is the information about the " + detectedMed + " tablet.";
+    const guidanceText = detectedMed + " is a commonly used medication. Please check with your doctor for exact dosage and instructions.";
+
+    return res.json({
+      emergency: false,
+      needsMoreInfo: false,
+      question: "",
+      options: [],
+      riskLevel: "low",
+      confidenceScore: 90,
+      summary: summaryText,
+      conditions: [detectedMed],
+      homeCare: [
+        "Always take medications under medical supervision.",
+        "Take the tablet after meals to avoid gastric irritation."
+      ],
+      medicineGuidance: guidanceText,
+      doctorRecommendation: "Consult standard physician",
+      prescriptions: prescs
+    });
+  }
+
   // Emergency checks
-  if (text.includes('chest pain') || text.includes('breathing') || text.includes('stroke') || text.includes('seizure') || text.includes('suicide') || text.includes('allergic') || text.includes('గుండె') || text.includes('శ్వాస') || text.includes('నొప్పి')) {
+  if (text.includes('chest pain') || text.includes('breathing') || text.includes('stroke') || text.includes('seizure') || text.includes('suicide') || text.includes('allergic')) {
     return res.json({
       emergency: true,
       needsMoreInfo: false,
@@ -557,92 +528,19 @@ function handleMockAISymptoms(res: Response, chatHistory: any[], msg: string, la
 
   const historyLen = chatHistory.length;
 
-  if (lang === 'te') {
-    if (historyLen < 2) {
-      return res.json({
-        emergency: false,
-        needsMoreInfo: true,
-        question: "నేను అర్థం చేసుకోగలను. మీ అసౌకర్యం 1 నుండి 10 స్కేల్‌లో ఎంత తీవ్రంగా ఉందో మరియు ఇది ఎప్పుడు ప్రారంభమైందో చెప్పగలరా?",
-        options: ["1-3 (తేలికపాటి అసౌకర్యం)", "4-6 (మధ్యస్థ అసౌకర్యం)", "7-10 (తీవ్రమైన అసౌకర్యం)", "ఈరోజే ప్రారంభమైంది", "కొన్ని రోజుల క్రితం ప్రారంభమైంది"]
-      });
-    } else if (historyLen < 4) {
-      return res.json({
-        emergency: false,
-        needsMoreInfo: true,
-        question: "మీకు జ్వరం, దగ్గు, మైకము లేదా వాంతులు వంటి ఇతర లక్షణాలు ఉన్నాయా? అలాగే, మీకు మధుమేహం (డయాబెటిస్) వంటి ఏవైనా అలెర్జీలు లేదా ఇతర ఆరోగ్య సమస్యలు ఉన్నాయా?",
-        options: ["అవును, నాకు స్వల్ప జ్వరం ఉంది", "అవును, నాకు దగ్గు ఉంది", "ఇతర లక్షణాలు లేవు", "నాకు డయాబెటిస్ ఉంది", "ఎలాంటి అలెర్జీలు లేదా ఆరోగ్య సమస్యలు లేవు"]
-      });
-    }
-
-    return res.json({
-      emergency: false,
-      needsMoreInfo: false,
-      question: "",
-      options: [],
-      riskLevel: text.includes('తీవ్ర') || text.includes('severe') || text.includes('bad') ? 'moderate' : 'low',
-      confidenceScore: 85,
-      summary: `రోగి లక్షణాలను ఈ విధంగా నివేదించారు: "${msg}". విశ్రాంతి మరియు తగినంత ద్రవపదార్థాలు తీసుకోవాలని సూచించబడింది.`,
-      conditions: ["తేలికపాటి వైరల్ ఇన్ఫెక్షన్ (Viral Infection)", "డీహైడ్రేషన్ తలనొప్పి (Dehydration)"],
-      homeCare: [
-        "టాక్సిన్లను బయటకు పంపడానికి ఈరోజు కనీసం 2.5 లీటర్ల నీరు త్రాగాలి.",
-        "ఒత్తిడిని తగ్గించడానికి ప్రశాంతమైన, చీకటి గదిలో 8 గంటలు విశ్రాంతి తీసుకోండి.",
-        "ఆవిరి పట్టడం ద్వారా శ్వాస మార్గాలను తెరవవచ్చు."
-      ],
-      medicineGuidance: "తేలికపాటి లక్షణాల కోసం, మీరు ఫార్మసిస్ట్ సలహా మేరకు పారాసెటమాల్ వంటి ప్రామాణిక ఓవర్-ది-కౌంటర్ మందులను తీసుకోవచ్చు. లక్షణాలు 48 గంటల కంటే ఎక్కువ ఉంటే, వైద్యుడిని సంప్రదించండి.",
-      doctorRecommendation: "వాయిస్ లేదా చాట్ ద్వారా జనరల్ ఫిజీషియన్ సంప్రదింపులు.",
-      prescriptions: getMockPrescriptions(text, lang)
-    });
-  } else if (lang === 'hi') {
-    if (historyLen < 2) {
-      return res.json({
-        emergency: false,
-        needsMoreInfo: true,
-        question: "मैं समझ सकता हूँ। क्या आप बता सकते हैं कि 1 से 10 के पैमाने पर आपकी परेशानी कितनी गंभीर है, और यह कब शुरू हुई?",
-        options: ["1-3 (हल्की परेशानी)", "4-6 (मध्यम परेशानी)", "7-10 (गंभीर परेशानी)", "आज ही शुरू हुआ", "कुछ दिन पहले शुरू हुआ"]
-      });
-    } else if (historyLen < 4) {
-      return res.json({
-        emergency: false,
-        needsMoreInfo: true,
-        question: "क्या आपको बुखार, खांसी, चक्कर आना या उल्टी जैसे कोई अन्य लक्षण हैं? इसके अलावा, क्या आपको कोई एलर्जी या मधुमेह (डायबिटीज) जैसी कोई बीमारी है?",
-        options: ["हाँ, मुझे हल्का बुखार है", "हाँ, मुझे खांसी है", "कोई अन्य लक्षण नहीं", "मुझे डायबिटीज है", "कोई एलर्जी या बीमारी नहीं"]
-      });
-    }
-
-    return res.json({
-      emergency: false,
-      needsMoreInfo: false,
-      question: "",
-      options: [],
-      riskLevel: text.includes('severe') || text.includes('bad') ? 'moderate' : 'low',
-      confidenceScore: 85,
-      summary: `मरीज ने अपने लक्षण इस प्रकार बताए हैं: "${msg}"। आराम करने और पर्याप्त मात्रा में तरल पदार्थ लेने की सलाह दी गई है।`,
-      conditions: ["हल्का वायरल संक्रमण", "निर्जलीकरण (डिहाइड्रेशन) सिरदर्द"],
-      homeCare: [
-        "शरीर से टॉक्सिन्स बाहर निकालने के लिए आज कम से कम 2.5 लीटर पानी पिएं।",
-        "तनाव कम करने के लिए एक शांत, अंधेरे कमरे में 8 घंटे आराम करें।",
-        "भाप लेने से बंद नाक और श्वसन मार्ग खोलने में मदद मिल सकती है।"
-      ],
-      medicineGuidance: "हल्के लक्षणों के लिए, आप फार्मासिस्ट की सलाह पर पैरासिटामोल जैसी सामान्य दवाएं ले सकते हैं। यदि लक्षण 48 घंटे से अधिक समय तक बने रहते हैं, तो डॉक्टर से संपर्क करें।",
-      doctorRecommendation: "वॉइस या चैट के माध्यम से सामान्य चिकित्सक (General Practitioner) से परामर्श लें।",
-      prescriptions: getMockPrescriptions(text, lang)
-    });
-  }
-
-  // Return assessment default English
   if (historyLen < 2) {
     return res.json({
       emergency: false,
       needsMoreInfo: true,
-      question: "I understand. Could you tell me how severe your discomfort is on a scale of 1 to 10, and when did it start?",
+      question: "I understand. Can you tell me how severe your discomfort is on a scale of 1 to 10, and when it started?",
       options: ["1-3 (Mild discomfort)", "4-6 (Moderate discomfort)", "7-10 (Severe discomfort)", "Started today", "Started a few days ago"]
     });
   } else if (historyLen < 4) {
     return res.json({
       emergency: false,
       needsMoreInfo: true,
-      question: "Do you have other symptoms like fever, cough, dizziness, or vomiting? Also, do you have any allergies or chronic conditions like diabetes?",
-      options: ["Yes, mild fever", "Yes, cough", "No other symptoms", "I have diabetes", "No allergies or health issues"]
+      question: "Do you have any other symptoms like fever, cough, dizziness, or vomiting? Also, do you have any allergies or existing conditions like diabetes?",
+      options: ["Yes, mild fever", "Yes, cough", "No other symptoms", "I have diabetes", "No allergies or conditions"]
     });
   }
 
@@ -653,18 +551,19 @@ function handleMockAISymptoms(res: Response, chatHistory: any[], msg: string, la
     options: [],
     riskLevel: text.includes('severe') || text.includes('bad') ? 'moderate' : 'low',
     confidenceScore: 85,
-    summary: `Patient reports having symptoms described as: "${msg}". High-quality fluids and rest have been advised.`,
+    summary: "Patient reported symptoms: " + msg + ". Rest and hydration advised.",
     conditions: ["Mild viral infection", "Dehydration headache"],
     homeCare: [
-      "Ensure hydration by drinking at least 2.5L of water today to flush toxins.",
-      "Rest in a quiet, dark room for 8 hours to reduce stress.",
-      "Steam inhalation can help open blocked nasal passages."
+      "Drink at least 2.5L of water today to stay hydrated.",
+      "Get 8 hours of rest in a quiet, dark room.",
+      "Inhale steam to help open up airways."
     ],
-    medicineGuidance: "For mild symptoms, you may consider standard over-the-counter options (like paracetamol) under the advice of a pharmacist. If symptoms persist for more than 48 hours, seek medical attention.",
-    doctorRecommendation: "General Practitioner consultation via voice or chat.",
+    medicineGuidance: "For mild symptoms, you may take standard over-the-counter medications like Paracetamol. If symptoms persist for more than 48 hours, consult a physician.",
+    doctorRecommendation: "General physician consultation via voice or chat.",
     prescriptions: getMockPrescriptions(text, lang)
   });
 }
+
 
 function handleMockMedicineExplain(res: Response, medName: string, lang: string = 'en') {
   const nameLower = medName.toLowerCase();
