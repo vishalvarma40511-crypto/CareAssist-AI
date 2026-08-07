@@ -382,9 +382,23 @@ Your response must be a single, valid JSON object matching exactly this schema:
 }
 `;
 
-    const result = await generateContentWithFallback(prompt, 'application/json');
+    // Implement a 4-second timeout to prevent API hangs
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API call timed out')), 4000)
+    );
+
+    const apiCallPromise = generateContentWithFallback(prompt, 'application/json');
+
+    const result = await Promise.race([apiCallPromise, timeoutPromise]) as any;
     const responseText = result.response.text();
-    const parsed = JSON.parse(responseText);
+    
+    // Clean response text from markdown block wrappers
+    let cleanJson = responseText.trim();
+    if (cleanJson.startsWith('```')) {
+      cleanJson = cleanJson.replace(/^```json\s*/i, '').replace(/```$/g, '').trim();
+    }
+    
+    const parsed = JSON.parse(cleanJson);
     res.json(parsed);
   } catch (error: any) {
     console.warn('Gemini diet planning error, falling back to local fallback generator:', error.message || error);
@@ -419,6 +433,16 @@ Your response must be a single, valid JSON object matching exactly this schema:
       carbs = 110;
       fat = 65;
       water = 3.0;
+    } else if (goal === 'hypertension') {
+      breakfast = "Low-sodium oatmeal with walnuts and sliced strawberries.";
+      lunch = "Unsalted lentil vegetable soup with whole wheat bread rolls.";
+      dinner = "Baked chicken breast or tofu with spinach salad and dressing.";
+      snacks = "Plain Greek yogurt with mixed berries.";
+      calories = 1500;
+      protein = 90;
+      carbs = 180;
+      fat = 45;
+      water = 2.8;
     }
 
     if (dietType === 'non_vegetarian') {
@@ -429,6 +453,10 @@ Your response must be a single, valid JSON object matching exactly this schema:
         lunch = "Light tuna salad sandwich on multi-grain bread with lettuce and tomatoes.";
         dinner = "Baked turkey breast with roasted bell peppers and quinoa.";
       }
+    } else if (dietType === 'vegan') {
+      breakfast = "Tofu scramble with spinach, tomatoes, and whole grain sourdough.";
+      lunch = "Black bean and avocado salad with lime dressing and brown rice.";
+      dinner = "Lentil shepherd's pie with sweet potato mash topping.";
     }
 
     res.json({
