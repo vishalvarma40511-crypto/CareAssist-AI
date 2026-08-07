@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Send, Video, MessageSquare, X, Wifi, WifiOff, Phone, PhoneOff, Mic, MicOff, Camera, CameraOff } from 'lucide-react';
+import JitsiMeetEmbed from './JitsiMeetEmbed';
 
 interface Message {
   id?: string;
@@ -245,18 +246,12 @@ const ConsultationPanel: React.FC<ConsultationPanelProps> = ({
               </div>
             ) : (
               <div className="flex-1 relative">
-                <iframe
-                  src={`https://meet.jit.si/${jitsiRoom}#userInfo.displayName="${encodeURIComponent(user.name || 'User')}"&config.startWithAudioMuted=false&config.startWithVideoMuted=${appointment.type === 'voice' ? 'true' : 'false'}`}
-                  allow="camera; microphone; display-capture; autoplay"
-                  allowFullScreen
-                  className="w-full h-full border-none"
-                  title="CareAssist Video Consultation"
+                <JitsiMeetEmbed
+                  room={jitsiRoom}
+                  userName={user.name || 'User'}
+                  voiceOnly={appointment.type === 'voice'}
+                  onEnd={() => setVideoActive(false)}
                 />
-                <button
-                  onClick={() => setVideoActive(false)}
-                  className="absolute top-3 right-3 flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-xl transition-all shadow-lg">
-                  <PhoneOff size={14} /> End Call
-                </button>
               </div>
             )}
           </div>

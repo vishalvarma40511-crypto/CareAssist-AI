@@ -39,19 +39,29 @@ app.use(cors({
 
 app.use(express.json());
 
-// Rate Limiter: 150 requests per 15 minutes
+// General rate limiter: 500 requests per 15 minutes (generous for normal usage)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 500,
   message: { error: 'Too many requests from this IP. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/health', // never rate-limit health checks
 });
 app.use(limiter);
 
+// Stricter limiter for AI and Auth endpoints only: 60 per 15 minutes
+const aiAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { error: 'Too many AI/auth requests. Please wait a moment and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Mount API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/auth', aiAuthLimiter, authRoutes);
+app.use('/api/ai', aiAuthLimiter, aiRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/admin', adminRoutes);
