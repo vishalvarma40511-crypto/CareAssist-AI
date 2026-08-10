@@ -342,18 +342,6 @@ cd CareAssist-AI
 npm install
 
 npm run dev
-```
-
----
-
-# 👥 Contributors
-
-| Name        | Role                 |
-| ----------- | -------------------- |
-| Your Name   | Full Stack Developer |
-| Team Member | Frontend             |
-| Team Member | Backend              |
-| Team Member | AI                   |
 
 ---
 
