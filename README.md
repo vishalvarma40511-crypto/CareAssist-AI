@@ -10,7 +10,9 @@
 
 | Resource         |           Link                           ||   
 | 🌍 Live Website  | https://care-assist-ai-omega.vercel.app/       ||
+
 | 🎥 Demo Video    | https://drive.google.com/file/d/1MoAG-L2UYzvtMvoTL8YIqk4dozDEGG1v/view?usp=drivesdk   ||
+
 | 📊 Presentation  | https://gamma.app/docs/CareAssist-AI-hb6itz0vy9rd5wf    ||
 
 ---
